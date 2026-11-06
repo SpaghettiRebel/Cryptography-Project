@@ -158,9 +158,17 @@ func TestHealthFollowsStore(t *testing.T) {
 	if got := check(); got != healthpb.HealthCheckResponse_SERVING {
 		t.Fatalf("база доступна: %v", got)
 	}
-	ready = errors.New("нет базы")
+	ready = errors.New("нет соединения с amqp://user:secret@rabbitmq:5672")
 	h.server.CheckReady(bg)
 	if got := check(); got != healthpb.HealthCheckResponse_NOT_SERVING {
-		t.Fatalf("база недоступна: %v", got)
+		t.Fatalf("зависимость недоступна: %v", got)
+	}
+	if strings.Contains(h.log.String(), "secret") || strings.Contains(h.log.String(), "amqp://") {
+		t.Fatalf("в журнале текст ошибки: %s", h.log.String())
+	}
+	ready = nil
+	h.server.CheckReady(bg)
+	if got := check(); got != healthpb.HealthCheckResponse_SERVING {
+		t.Fatalf("зависимость вернулась: %v", got)
 	}
 }

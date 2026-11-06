@@ -5,7 +5,7 @@ package cryptochat.v1;
 option go_package = "cryptochat/server/api/v1;apiv1";
 
 // Ошибки возвращаются кодом gRPC и google.rpc.ErrorInfo с полем reason.
-// Причины перечислены в исследование решений. Домен: "cryptochat".
+// Домен: "cryptochat".
 
 service Accounts {
   // ALREADY_EXISTS/LOGIN_TAKEN, INVALID_ARGUMENT/INVALID_LOGIN, INVALID_ARGUMENT/INVALID_PASSWORD

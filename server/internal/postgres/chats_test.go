@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -341,6 +342,155 @@ func TestRemoveContactRacesWithChatOperations(t *testing.T) {
 		}
 		if err := db.AcceptRequest(ctx, b.ID, "alice"); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+// Обход закрытых чатов использует частичный индекс и на непустых данных.
+func TestQueueCleanupUsesIndex(t *testing.T) {
+	db := migrated(t)
+	ctx := context.Background()
+	a, _ := chatPair(t, db)
+	var closed [][16]byte
+	for i := 0; i < 6; i++ {
+		id := chatstest.NewID(t)
+		if _, err := db.CreateChat(ctx, id, a.ID, "bob", chatParams); err != nil {
+			t.Fatal(err)
+		}
+		closed = append(closed, id)
+	}
+	// Много активных чатов: на маленькой таблице планировщик верно предпочитает полный обход.
+	if _, err := db.pool.Exec(ctx, `INSERT INTO chats (id, user_low, user_high, creator_id, algorithm, key_bits, cipher_mode, padding_mode)
+		SELECT decode(md5(i::text), 'hex'), user_low, user_high, creator_id, algorithm, key_bits, cipher_mode, padding_mode
+		FROM chats, generate_series(1, 20000) AS i WHERE id = $1`, closed[0][:]); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range closed {
+		if _, err := db.CloseChat(ctx, id, a.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.pool.Exec(ctx, "ANALYZE chats"); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := db.pool.Query(ctx, `EXPLAIN SELECT id, user_low::text, user_high::text FROM chats
+		WHERE closed_at IS NOT NULL AND queues_deleted_at IS NULL ORDER BY closed_at, id LIMIT 100`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var plan strings.Builder
+	for rows.Next() {
+		var line string
+		if err := rows.Scan(&line); err != nil {
+			t.Fatal(err)
+		}
+		plan.WriteString(line + "\n")
+	}
+	if !strings.Contains(plan.String(), "chats_queue_cleanup_idx") {
+		t.Fatalf("индекс не используется:\n%s", plan.String())
+	}
+	list, err := db.PendingQueueCleanup(ctx, 100)
+	if err != nil || len(list) != len(closed) {
+		t.Fatalf("список: %d, %v", len(list), err)
+	}
+}
+
+// Закрытие и удаление контакта одновременно с обходом не теряют чат: отметка ставится только тому, что обход видел.
+func TestCleanupDoesNotLoseChats(t *testing.T) {
+	db := migrated(t)
+	ctx := context.Background()
+	a, _ := chatPair(t, db)
+	const total = 30
+	ids := make([][16]byte, total)
+	for i := range ids {
+		ids[i] = chatstest.NewID(t)
+		if _, err := db.CreateChat(ctx, ids[i], a.ID, "bob", chatParams); err != nil {
+			t.Fatal(err)
+		}
+	}
+	marked := map[[16]byte]bool{}
+	stop := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		for {
+			list, err := db.PendingQueueCleanup(ctx, 7)
+			if err != nil {
+				done <- err
+				return
+			}
+			for _, c := range list {
+				if err := db.MarkQueuesDeleted(ctx, c.ID); err != nil {
+					done <- err
+					return
+				}
+				marked[c.ID] = true
+			}
+			select {
+			case <-stop:
+				if len(list) == 0 {
+					done <- nil
+					return
+				}
+			default:
+			}
+		}
+	}()
+	var wg sync.WaitGroup
+	for _, id := range ids[:total/2] {
+		wg.Add(1)
+		go func(id [16]byte) {
+			defer wg.Done()
+			if _, err := db.CloseChat(ctx, id, a.ID); err != nil {
+				t.Error(err)
+			}
+		}(id)
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := db.RemoveContact(ctx, a.ID, "bob"); err != nil {
+			t.Error(err)
+		}
+	}()
+	wg.Wait()
+	close(stop)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range ids {
+		if !marked[id] {
+			t.Errorf("чат %x потерян обходом", id[:2])
+		}
+	}
+	if n := count(t, db, "SELECT count(*) FROM chats WHERE closed_at IS NULL"); n != 0 {
+		t.Fatalf("активных чатов: %d", n)
+	}
+}
+
+// Удаление контакта с несколькими чатами пары ставит в список все чаты.
+func TestRemoveContactListsAllChats(t *testing.T) {
+	db := migrated(t)
+	ctx := context.Background()
+	a, _ := chatPair(t, db)
+	want := map[[16]byte]bool{}
+	for i := 0; i < 5; i++ {
+		id := chatstest.NewID(t)
+		if _, err := db.CreateChat(ctx, id, a.ID, "bob", chatParams); err != nil {
+			t.Fatal(err)
+		}
+		want[id] = true
+	}
+	if err := db.RemoveContact(ctx, a.ID, "bob"); err != nil {
+		t.Fatal(err)
+	}
+	list, err := db.PendingQueueCleanup(ctx, 100)
+	if err != nil || len(list) != len(want) {
+		t.Fatalf("список: %d, %v", len(list), err)
+	}
+	for _, c := range list {
+		if !want[c.ID] {
+			t.Errorf("лишний чат %x", c.ID[:2])
 		}
 	}
 }

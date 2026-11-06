@@ -165,6 +165,10 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if handled {
 		return err
 	}
+	handled, err = runDelivery(conn, authed, command, rest, stdin, stdout)
+	if handled {
+		return err
+	}
 	return fmt.Errorf("неизвестная команда %q", command)
 }
 

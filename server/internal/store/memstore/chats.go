@@ -23,6 +23,9 @@ type chatRow struct {
 	members [2]*chatMember
 	created time.Time
 	closed  *time.Time
+	// closeSeq упорядочивает закрытия, queuesDeleted — отметка об удалении очередей. Закрытие её не меняет.
+	closeSeq      int
+	queuesDeleted bool
 }
 
 func (c *chatRow) member(userID string) (self, peer *chatMember) {
@@ -35,11 +38,12 @@ func (c *chatRow) member(userID string) (self, peer *chatMember) {
 	return nil, nil
 }
 
-func (c *chatRow) close(now time.Time) {
+func (c *chatRow) close(now time.Time, seq int) {
 	if c.closed != nil {
 		return
 	}
 	c.closed = &now
+	c.closeSeq = seq
 	for _, m := range c.members {
 		m.connected = false
 		m.value = nil
@@ -163,7 +167,8 @@ func (m *Store) CloseChat(_ context.Context, id [16]byte, userID string) (store.
 	if err != nil {
 		return store.Chat{}, err
 	}
-	c.close(time.Now())
+	m.closeSeq++
+	c.close(time.Now(), m.closeSeq)
 	return m.view(c, userID), nil
 }
 
@@ -214,7 +219,8 @@ func (m *Store) closePairChats(a, b string) {
 	for _, c := range m.chats {
 		if self, _ := c.member(a); self != nil {
 			if other, _ := c.member(b); other != nil {
-				c.close(now)
+				m.closeSeq++
+				c.close(now, m.closeSeq)
 			}
 		}
 	}

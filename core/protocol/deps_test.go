@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// FR-021: сервер использует только этот пакет и не должен получить код шифров чата.
+// Пакет описывает только формат и не должен получить код шифров чата.
 func TestNoCipherDependency(t *testing.T) {
 	if testing.Short() {
 		t.Skip("запуск go list")

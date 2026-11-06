@@ -1,0 +1,55 @@
+Способ проверки: go list и grep по исходникам в модулях core, server и integration.
+### server: go list -deps ./... | grep cryptochat/core (ожидается пусто)
+server-no-core=0
+[конец]
+### server: go list -deps ./... | grep stubcipher (ожидается пусто)
+server-no-stub=0
+[конец]
+### server: запрещённые прямые импорты, включая тесты (ожидается пусто)
+server-no-forbidden=0
+[конец]
+server-grep-forbidden=0
+[конец]
+### server: прямые импорты crypto/* и x/crypto, включая тесты
+      1 crypto/ecdsa
+      1 crypto/elliptic
+     10 crypto/rand
+      3 crypto/sha256
+      1 crypto/subtle
+      4 crypto/tls
+      2 crypto/x509
+      1 crypto/x509/pkix
+      1 golang.org/x/crypto/argon2
+### integration: импорты вне стандартной библиотеки, теги e2e,devcipher (ожидаются core, server/api/v1, grpc, amqp091-go)
+cryptochat/core/algorithms
+cryptochat/core/cipher
+cryptochat/core/dh
+cryptochat/core/kdf
+cryptochat/core/message
+cryptochat/core/modes
+cryptochat/core/protocol
+cryptochat/server/api/v1
+github.com/rabbitmq/amqp091-go
+google.golang.org/grpc
+google.golang.org/grpc/credentials
+google.golang.org/grpc/health/grpc_health_v1
+google.golang.org/grpc/metadata
+google.golang.org/grpc/status
+integration-imports=0
+[конец]
+### core: тестовый шифр только с тегом devcipher
+core-no-stub=0
+[без тега: конец]
+core-stub-with-tag=0
+### core: импорты сети и хранилища (ожидается пусто)
+core-no-network=0
+[конец]
+### директива go во всех модулях
+core: go 1.22
+core-go122=0
+server: go 1.22
+server-go122=0
+integration: go 1.22
+integration-go122=0
+
+ИТОГ: failed=0

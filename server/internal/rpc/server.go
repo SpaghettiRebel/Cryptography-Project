@@ -14,12 +14,14 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
 	apiv1 "cryptochat/server/api/v1"
 	"cryptochat/server/internal/accounts"
 	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/delivery"
 	"cryptochat/server/internal/keyexchange"
 )
 
@@ -32,9 +34,12 @@ type Deps struct {
 	Contacts    *contacts.Service
 	Chats       *chats.Service
 	KeyExchange *keyexchange.Service
+	Delivery    *delivery.Service
 	Logger      *slog.Logger
-	// Ready проверяет готовность хранилища.
+	// Ready проверяет готовность зависимостей сервера.
 	Ready func(context.Context) error
+	// OpenTimeout — срок ожидания первого сообщения потока; нулевое значение означает 10 с.
+	OpenTimeout time.Duration
 }
 
 // Server объединяет gRPC-сервер и проверку готовности.
@@ -55,7 +60,14 @@ func NewServer(tlsConfig *tls.Config, deps Deps) *Server {
 		GRPC: grpc.NewServer(
 			grpc.Creds(credentials.NewTLS(tlsConfig)),
 			grpc.MaxRecvMsgSize(MaxMessageSize),
-			grpc.ChainStreamInterceptor(authStreamInterceptor(deps.Accounts)),
+			// Полуоткрытое соединение обнаруживается не дольше чем за 40 с.
+			grpc.KeepaliveParams(keepalive.ServerParameters{Time: 30 * time.Second, Timeout: 10 * time.Second}),
+			grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{MinTime: 20 * time.Second, PermitWithoutStream: true}),
+			grpc.ChainStreamInterceptor(
+				logStreamInterceptor(logger),
+				recoverStreamInterceptor(logger),
+				authStreamInterceptor(deps.Accounts),
+			),
 			grpc.ChainUnaryInterceptor(
 				logInterceptor(logger),
 				recoverInterceptor(logger),
@@ -72,16 +84,18 @@ func NewServer(tlsConfig *tls.Config, deps Deps) *Server {
 	apiv1.RegisterContactsServer(s.GRPC, &contactsHandler{svc: deps.Contacts})
 	apiv1.RegisterChatsServer(s.GRPC, &chatsHandler{svc: deps.Chats})
 	apiv1.RegisterKeyExchangeServer(s.GRPC, &keyExchangeHandler{svc: deps.KeyExchange})
+	apiv1.RegisterDeliveryServer(s.GRPC, &deliveryHandler{svc: deps.Delivery, accounts: deps.Accounts, logger: logger, openTimeout: deps.OpenTimeout})
 	return s
 }
 
-// CheckReady обновляет состояние по результату проверки хранилища.
+// CheckReady обновляет состояние по результату проверки зависимостей. Текст ошибки в журнал не попадает:
+// он может содержать адрес зависимости.
 func (s *Server) CheckReady(ctx context.Context) {
 	state := healthpb.HealthCheckResponse_SERVING
 	if s.ready != nil {
 		if err := s.ready(ctx); err != nil {
 			state = healthpb.HealthCheckResponse_NOT_SERVING
-			s.logger.Warn("хранилище недоступно", "err", err)
+			s.logger.Warn("сервер не готов: зависимость недоступна")
 		}
 	}
 	s.health.SetServingStatus("", state)
@@ -105,21 +119,36 @@ func (s *Server) RunHealth(ctx context.Context) {
 // Shutdown переводит проверку готовности в состояние остановки.
 func (s *Server) Shutdown() { s.health.Shutdown() }
 
-// logInterceptor пишет метод, код и длительность. Тела запросов и метаданные в журнал не попадают.
+// logCall пишет метод, код и длительность. Тела запросов и метаданные в журнал не попадают.
+func logCall(ctx context.Context, logger *slog.Logger, method string, err error, start time.Time) {
+	code := status.Code(err)
+	level := slog.LevelInfo
+	if strings.HasPrefix(method, "/grpc.health.v1.Health/") {
+		level = slog.LevelDebug
+	}
+	if code == codes.Internal || code == codes.Unavailable {
+		level = slog.LevelError
+	}
+	logger.Log(ctx, level, "запрос", "method", method, "code", code.String(), "duration", time.Since(start))
+}
+
 func logInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		start := time.Now()
 		resp, err := handler(ctx, req)
-		code := status.Code(err)
-		level := slog.LevelInfo
-		if strings.HasPrefix(info.FullMethod, "/grpc.health.v1.Health/") {
-			level = slog.LevelDebug
-		}
-		if code == codes.Internal || code == codes.Unavailable {
-			level = slog.LevelError
-		}
-		logger.Log(ctx, level, "запрос", "method", info.FullMethod, "code", code.String(), "duration", time.Since(start))
+		logCall(ctx, logger, info.FullMethod, err, start)
 		return resp, err
+	}
+}
+
+// logStreamInterceptor пишет те же сведения по завершении потока; контекст потока к этому времени мог
+// быть отменён, поэтому запись идёт с фоновым.
+func logStreamInterceptor(logger *slog.Logger) grpc.StreamServerInterceptor {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		start := time.Now()
+		err := handler(srv, ss)
+		logCall(context.Background(), logger, info.FullMethod, err, start)
+		return err
 	}
 }
 
@@ -134,6 +163,19 @@ func recoverInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 			}
 		}()
 		return handler(ctx, req)
+	}
+}
+
+// recoverStreamInterceptor применяет то же правило к потоковым вызовам.
+func recoverStreamInterceptor(logger *slog.Logger) grpc.StreamServerInterceptor {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("паника в обработчике", "method", info.FullMethod, "stack", stackFrames())
+				err = status.Error(codes.Internal, "внутренняя ошибка")
+			}
+		}()
+		return handler(srv, ss)
 	}
 }
 

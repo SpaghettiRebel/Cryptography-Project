@@ -14,7 +14,7 @@ import (
 	apiv1 "cryptochat/server/api/v1"
 )
 
-const chatsUsage = "chat-create, chats, chat-info, chat-connect, chat-disconnect, chat-close, key-publish, key-get"
+const chatsUsage = "chat-create, chats, chat-info, chat-connect, chat-disconnect, chat-close, key-publish, key-get, send, recv"
 
 // runChat выполняет команды чатов и возвращает false, если команда не относится к ним.
 func runChat(conn *grpc.ClientConn, authed func() (context.Context, error), command string, args []string, stdin io.Reader, stdout io.Writer) (bool, error) {

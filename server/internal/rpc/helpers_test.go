@@ -19,7 +19,10 @@ import (
 	"cryptochat/server/internal/bootstrap"
 	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/delivery"
+	"cryptochat/server/internal/delivery/membroker"
 	"cryptochat/server/internal/keyexchange"
+	"cryptochat/server/internal/store"
 	"cryptochat/server/internal/store/memstore"
 )
 
@@ -48,14 +51,35 @@ type harness struct {
 	contacts apiv1.ContactsClient
 	chats    apiv1.ChatsClient
 	keys     apiv1.KeyExchangeClient
+	delivery apiv1.DeliveryClient
 	conn     *grpc.ClientConn
 	log      *syncBuffer
 	server   *Server
 	store    *memstore.Store
+	broker   *membroker.Broker
+	service  *delivery.Service
+	deps     Deps
 }
 
 // start поднимает настоящий gRPC с TLS поверх соединения в памяти.
 func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)) *harness {
+	t.Helper()
+	return startFull(t, ready, testConfig{}, extra...)
+}
+
+// startWith дополнительно задаёт сроки доставки и предел длины очереди.
+func startWith(t *testing.T, ready func(context.Context) error, opt delivery.Options, maxMessages int, extra ...func(*Deps)) *harness {
+	t.Helper()
+	return startFull(t, ready, testConfig{opt: opt, maxMessages: maxMessages}, extra...)
+}
+
+type testConfig struct {
+	opt         delivery.Options
+	maxMessages int
+	wrap        func(store.DeliveryStore) store.DeliveryStore
+}
+
+func startFull(t *testing.T, ready func(context.Context) error, cfg testConfig, extra ...func(*Deps)) *harness {
 	t.Helper()
 	secrets, certs := t.TempDir(), t.TempDir()
 	if err := bootstrap.Init(secrets, certs, -1); err != nil {
@@ -75,12 +99,20 @@ func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)
 		t.Fatal(err)
 	}
 	log := &syncBuffer{}
+	logger := slog.New(slog.NewTextHandler(log, nil))
+	broker := membroker.New(cfg.maxMessages)
+	var deliveryStore store.DeliveryStore = m
+	if cfg.wrap != nil {
+		deliveryStore = cfg.wrap(m)
+	}
+	service := delivery.New(deliveryStore, m, broker, logger, cfg.opt)
 	deps := Deps{
 		Accounts:    acc,
 		Contacts:    contacts.New(m),
 		Chats:       chats.New(m),
 		KeyExchange: keyexchange.New(m),
-		Logger:      slog.New(slog.NewTextHandler(log, nil)),
+		Delivery:    service,
+		Logger:      logger,
 		Ready:       ready,
 	}
 	for _, fn := range extra {
@@ -90,6 +122,9 @@ func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)
 	lis := bufconn.Listen(1 << 20)
 	go func() { _ = s.GRPC.Serve(lis) }()
 	t.Cleanup(s.GRPC.Stop)
+	cleanupCtx, stopCleanup := context.WithCancel(bg)
+	t.Cleanup(stopCleanup)
+	go service.RunCleanup(cleanupCtx)
 
 	conn, err := grpc.NewClient("passthrough:///bufnet",
 		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return lis.DialContext(ctx) }),
@@ -99,7 +134,7 @@ func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close() })
-	return &harness{accounts: apiv1.NewAccountsClient(conn), contacts: apiv1.NewContactsClient(conn), chats: apiv1.NewChatsClient(conn), keys: apiv1.NewKeyExchangeClient(conn), conn: conn, log: log, server: s, store: m}
+	return &harness{accounts: apiv1.NewAccountsClient(conn), contacts: apiv1.NewContactsClient(conn), chats: apiv1.NewChatsClient(conn), keys: apiv1.NewKeyExchangeClient(conn), delivery: apiv1.NewDeliveryClient(conn), conn: conn, log: log, server: s, store: m, broker: broker, service: service, deps: deps}
 }
 
 func auth(token string) context.Context {

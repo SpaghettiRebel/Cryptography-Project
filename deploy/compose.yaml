@@ -36,6 +36,28 @@ services:
       retries: 30
     # Порт наружу не открыт: к базе обращается только сервер.
 
+  # Постоянное имя узла хранит данные брокера в томе при пересоздании контейнера. Пользователь задан явно:
+  # команда диагностики от root может создать файл cookie с чужим владельцем.
+  rabbitmq:
+    image: rabbitmq:4.1-alpine
+    user: "100:101"
+    hostname: rabbitmq
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      RABBITMQ_CONFIG_FILE: /secrets/rabbitmq.conf
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+      - secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+    # Порт наружу не открыт: к брокеру обращается только сервер.
+
   server:
     build: *server-build
     image: cryptochat-server
@@ -48,6 +70,9 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+      # Сервер сам ждёт брокера и переживает его отсутствие.
+      rabbitmq:
+        condition: service_started
     volumes:
       - secrets:/secrets:ro
     ports:
@@ -63,3 +88,4 @@ services:
 volumes:
   secrets:
   pgdata:
+  rabbitdata:

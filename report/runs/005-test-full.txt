@@ -1,0 +1,491 @@
+Способ проверки: сборка, go vet, gofmt, быстрые тесты, детектор гонок, тесты на настоящих Postgres и RabbitMQ, сквозные тесты на Docker Compose и ручной сценарий через chatcli.
+Fri Nov  6 21:45:35 RTZ 2026
+go version go1.23.1 windows/amd64
+Docker 29.8.0
+Docker Compose version v5.5.1
+test-broker-start=0
+test-db-start=0
+
+### core: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### server: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### core: vet с тегом devcipher
+vet-devcipher=0
+
+### integration: build/vet/gofmt, теги e2e и e2e,devcipher
+vet-e2e=0
+build-e2e=0
+vet-e2e-devcipher=0
+build-e2e-devcipher=0
+gofmt: []
+
+### core: go test -short ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.315s
+ok  	cryptochat/core/cryptoctx	0.801s
+ok  	cryptochat/core/dh	0.841s
+ok  	cryptochat/core/internal/stubcipher	0.327s
+ok  	cryptochat/core/kdf	0.304s
+ok  	cryptochat/core/message	1.269s
+ok  	cryptochat/core/modes	0.324s
+ok  	cryptochat/core/padding	0.311s
+ok  	cryptochat/core/protocol	0.434s
+short=0
+
+### core: go test -short -tags devcipher ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.339s
+ok  	cryptochat/core/cryptoctx	0.770s
+ok  	cryptochat/core/dh	0.793s
+ok  	cryptochat/core/internal/stubcipher	0.302s
+ok  	cryptochat/core/kdf	0.329s
+ok  	cryptochat/core/message	1.248s
+ok  	cryptochat/core/modes	0.293s
+ok  	cryptochat/core/padding	0.296s
+ok  	cryptochat/core/protocol	0.411s
+short-devcipher=0
+
+### core: go test -short -race ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	1.259s
+ok  	cryptochat/core/cryptoctx	2.348s
+ok  	cryptochat/core/dh	3.453s
+ok  	cryptochat/core/internal/stubcipher	1.355s
+ok  	cryptochat/core/kdf	1.310s
+ok  	cryptochat/core/message	15.011s
+ok  	cryptochat/core/modes	1.339s
+ok  	cryptochat/core/padding	1.325s
+ok  	cryptochat/core/protocol	1.635s
+race=0
+
+### core: go test -short -race -tags devcipher ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	1.347s
+ok  	cryptochat/core/cryptoctx	2.042s
+ok  	cryptochat/core/dh	2.897s
+ok  	cryptochat/core/internal/stubcipher	1.320s
+ok  	cryptochat/core/kdf	1.303s
+ok  	cryptochat/core/message	13.657s
+ok  	cryptochat/core/modes	1.263s
+ok  	cryptochat/core/padding	1.293s
+ok  	cryptochat/core/protocol	1.467s
+race-devcipher=0
+
+### core: go test ./... без -short, размер фрагмента и замеры
+PASS
+ok  	cryptochat/core/algorithms	1.260s
+PASS
+ok  	cryptochat/core/cryptoctx	1.284s
+PASS
+ok  	cryptochat/core/dh	30.490s
+PASS
+ok  	cryptochat/core/internal/stubcipher	0.364s
+PASS
+ok  	cryptochat/core/kdf	0.388s
+    assembler_test.go:351: наибольший фрагмент 50576 байт
+    parallel_test.go:82: последовательно 4.8477197s, параллельно 1.210752s (5 рабочих), ускорение 4.00
+    resource_test.go:85: пик счётчика 13, рост кучи 1.8 МиБ
+PASS
+ok  	cryptochat/core/message	16.489s
+PASS
+ok  	cryptochat/core/modes	0.390s
+PASS
+ok  	cryptochat/core/padding	0.417s
+PASS
+ok  	cryptochat/core/protocol	1.851s
+core-full=0
+
+### server: go test -short ./...
+?   	cryptochat/server/api/v1	[no test files]
+ok  	cryptochat/server/cmd/chatcli	0.137s
+?   	cryptochat/server/internal/chats/chatstest	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+?   	cryptochat/server/internal/delivery/brokertest	[no test files]
+?   	cryptochat/server/internal/store	[no test files]
+ok  	cryptochat/server/cmd/server	0.161s
+ok  	cryptochat/server/internal/accounts	4.233s
+ok  	cryptochat/server/internal/bootstrap	1.765s
+ok  	cryptochat/server/internal/chats	0.432s
+ok  	cryptochat/server/internal/contacts	0.408s
+ok  	cryptochat/server/internal/delivery	2.027s
+ok  	cryptochat/server/internal/delivery/membroker	0.597s
+ok  	cryptochat/server/internal/keyexchange	0.407s
+ok  	cryptochat/server/internal/password	2.503s
+ok  	cryptochat/server/internal/postgres	1.332s
+ok  	cryptochat/server/internal/rabbit	0.839s
+ok  	cryptochat/server/internal/rpc	16.814s
+ok  	cryptochat/server/internal/store/memstore	1.006s
+short=0
+
+### server: go test -short -race ./...
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/internal/chats/chatstest	[no test files]
+?   	cryptochat/server/internal/delivery/brokertest	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+ok  	cryptochat/server/cmd/chatcli	2.266s
+ok  	cryptochat/server/cmd/server	3.248s
+?   	cryptochat/server/internal/store	[no test files]
+ok  	cryptochat/server/internal/accounts	8.401s
+ok  	cryptochat/server/internal/bootstrap	2.807s
+ok  	cryptochat/server/internal/chats	1.408s
+ok  	cryptochat/server/internal/contacts	1.397s
+ok  	cryptochat/server/internal/delivery	3.126s
+ok  	cryptochat/server/internal/delivery/membroker	1.579s
+ok  	cryptochat/server/internal/keyexchange	1.412s
+ok  	cryptochat/server/internal/password	5.708s
+ok  	cryptochat/server/internal/postgres	2.862s
+ok  	cryptochat/server/internal/rabbit	1.987s
+ok  	cryptochat/server/internal/rpc	23.102s
+ok  	cryptochat/server/internal/store/memstore	1.298s
+race=0
+
+### delivery: без -short, под детектором гонок, 5 раз
+?   	cryptochat/server/internal/delivery/brokertest	[no test files]
+ok  	cryptochat/server/internal/delivery	33.307s
+ok  	cryptochat/server/internal/delivery/membroker	8.801s
+delivery-race=0
+
+### rabbit, настоящий брокер, CHAT_REQUIRE_RABBITMQ=1
+--- PASS: TestBrokerRules (2.49s)
+    --- PASS: TestBrokerRules/готовность (0.14s)
+    --- PASS: TestBrokerRules/тело_доходит_байт_в_байт (0.07s)
+    --- PASS: TestBrokerRules/публикация_не_создаёт_очередь (0.04s)
+    --- PASS: TestBrokerRules/объявление_идемпотентно (0.07s)
+    --- PASS: TestBrokerRules/заполненная_очередь (0.39s)
+    --- PASS: TestBrokerRules/не_больше_prefetch_неподтверждённых (0.69s)
+    --- PASS: TestBrokerRules/неподтверждённое_возвращается (0.40s)
+    --- PASS: TestBrokerRules/порядок_без_повторов (0.15s)
+    --- PASS: TestBrokerRules/удаление_очереди (0.40s)
+    --- PASS: TestBrokerRules/удаление_завершает_потребителя (0.06s)
+    --- PASS: TestBrokerRules/потребление_без_очереди (0.03s)
+    --- PASS: TestBrokerRules/отмена_публикации (0.06s)
+--- PASS: TestStartWithoutBroker (1.02s)
+--- PASS: TestConnectionLoss (0.18s)
+PASS
+ok  	cryptochat/server/internal/rabbit	4.049s
+rabbit=0
+
+### rabbit, настоящий брокер, детектор гонок
+ok  	cryptochat/server/internal/rabbit	4.890s
+rabbit-race=0
+
+### postgres, CHAT_REQUIRE_POSTGRES=1
+--- PASS: TestConcurrentRegistration (5.12s)
+--- PASS: TestSessions (0.25s)
+--- PASS: TestUnavailable (0.00s)
+--- PASS: TestBadDSNDoesNotLeak (0.00s)
+--- PASS: TestChatRules (1.39s)
+--- PASS: TestCreateChatRacesWithRemoveContact (0.88s)
+--- PASS: TestConcurrentClose (0.45s)
+--- PASS: TestConnectRacesWithClose (0.73s)
+--- PASS: TestConcurrentChatOperations (1.01s)
+--- PASS: TestCloseErasesValues (0.29s)
+--- PASS: TestCreateChatRollsBack (0.29s)
+--- PASS: TestChatStoreUnavailable (0.00s)
+--- PASS: TestRemoveContactRacesWithChatOperations (1.16s)
+--- PASS: TestQueueCleanupUsesIndex (1.89s)
+--- PASS: TestCleanupDoesNotLoseChats (0.74s)
+--- PASS: TestRemoveContactListsAllChats (0.41s)
+--- PASS: TestContactTransitions (0.59s)
+--- PASS: TestConcurrentPairOperations (0.85s)
+--- PASS: TestConcurrentCrossRequests (0.82s)
+--- PASS: TestMapError (0.00s)
+--- PASS: TestMigrate (0.24s)
+--- PASS: TestMigrateConcurrent (0.33s)
+--- PASS: TestMigrateUpgrade (0.30s)
+--- PASS: TestMigrateQueueCleanup (0.34s)
+PASS
+ok  	cryptochat/server/internal/postgres	18.517s
+postgres=0
+
+### сервисы и rpc без -short: настоящие сроки, -v
+--- PASS: TestRegisterValidation (1.08s)
+--- PASS: TestLoginTakenKeepsRecord (0.77s)
+--- PASS: TestHashesDifferAndNoPlainPassword (0.33s)
+--- PASS: TestLoginErrorsAreEqual (0.69s)
+--- PASS: TestSessionLifecycle (0.50s)
+--- PASS: TestStoreFailureIsNotInvalidCredentials (0.11s)
+    accounts_test.go:234: логин есть 93.960817ms, логина нет 85.538329ms, отношение 1.098
+--- PASS: TestLoginTiming (19.83s)
+PASS
+ok  	cryptochat/server/internal/accounts	23.728s
+--- PASS: TestTransitions (0.00s)
+PASS
+ok  	cryptochat/server/internal/contacts	0.421s
+--- PASS: TestAllValidParamsAccepted (0.00s)
+--- PASS: TestInvalidParams (0.00s)
+--- PASS: TestIDs (0.00s)
+--- PASS: TestInvalidPeerLoginIsNotContact (0.00s)
+--- PASS: TestRandomFailureIsReturned (0.00s)
+--- PASS: TestReady (0.00s)
+PASS
+ok  	cryptochat/server/internal/chats	0.422s
+--- PASS: TestPublishChecksLengthFirst (0.00s)
+--- PASS: TestValueIsCopied (0.00s)
+PASS
+ok  	cryptochat/server/internal/keyexchange	0.430s
+--- PASS: TestChatRules (0.00s)
+PASS
+ok  	cryptochat/server/internal/store/memstore	0.426s
+--- PASS: TestAckReachesBrokerOnlyFromClient (0.02s)
+--- PASS: TestUnackedReturns (0.03s)
+--- PASS: TestPrefetchLimit (0.06s)
+--- PASS: TestAckOfNotIssuedIgnored (0.01s)
+--- PASS: TestCleanupAfterClose (0.00s)
+--- PASS: TestCleanupAfterRemoveContact (0.00s)
+--- PASS: TestCleanupWaitsForBroker (0.09s)
+--- PASS: TestCleanupPartialFailure (0.01s)
+--- PASS: TestCleanupAfterRestart (0.00s)
+--- PASS: TestSendRaceCloseDuringEnsure (0.00s)
+--- PASS: TestSendRaceCloseDuringPublish (0.00s)
+--- PASS: TestSendRaceCloseAfterPublish (0.00s)
+--- PASS: TestSendRaceDeleteFailureRetried (0.00s)
+--- PASS: TestLateQueueSurvivesRestart (0.00s)
+--- PASS: TestQueueLostByBroker (0.00s)
+--- PASS: TestStreamEndRules (0.03s)
+--- PASS: TestAckTimeoutRule (0.04s)
+--- PASS: TestAckTimeoutOldestWins (0.12s)
+--- PASS: TestAckInTimeKeepsStream (0.12s)
+--- PASS: TestSecondStreamReplaces (0.01s)
+--- PASS: TestCloseRacesWithOpen (0.01s)
+--- PASS: TestDisconnectAfterContextCancel (0.00s)
+--- PASS: TestDisconnectFailureIsHarmless (0.01s)
+--- PASS: TestShutdownEndsStreams (0.00s)
+--- PASS: TestOpenRules (0.00s)
+--- PASS: TestOpenRaceWithClose (0.00s)
+--- PASS: TestOpenBrokerDown (0.00s)
+--- PASS: TestOpenFailureChangesNothing (0.00s)
+--- PASS: TestAckTimeoutCountsFromIssue (0.85s)
+--- PASS: TestSendChecksInOrder (0.00s)
+--- PASS: TestSendRequiresConnectedReadyChat (0.00s)
+--- PASS: TestSendToDisconnectedPeer (0.00s)
+--- PASS: TestSendBodyAndQueues (0.00s)
+--- PASS: TestSendIsLight (0.00s)
+--- PASS: TestSendClientCancel (0.00s)
+--- PASS: TestSendBrokerTimeout (5.00s)
+--- PASS: TestQueueFull (0.00s)
+--- PASS: TestSendBrokerDown (0.00s)
+PASS
+ok  	cryptochat/server/internal/delivery	7.023s
+--- PASS: TestBrokerRules (1.51s)
+--- PASS: TestSetDown (0.00s)
+PASS
+ok  	cryptochat/server/internal/delivery/membroker	1.985s
+--- PASS: TestAccountsFlow (0.68s)
+--- PASS: TestLoginAnswersEqual (0.63s)
+--- PASS: TestSessionRejected (0.45s)
+--- PASS: TestRequestTooLarge (0.34s)
+--- PASS: TestPanicIsRecovered (0.63s)
+--- PASS: TestClientCancel (0.31s)
+--- PASS: TestHealthFollowsStore (0.21s)
+--- PASS: TestChatLifecycle (0.70s)
+--- PASS: TestCreateChatErrors (0.95s)
+--- PASS: TestChatMethodsRequireSession (0.19s)
+--- PASS: TestStrangerSeesNotFound (0.92s)
+--- PASS: TestConnectDisconnect (0.73s)
+--- PASS: TestKeyExchange (0.67s)
+--- PASS: TestRemoveContactClosesChats (0.71s)
+--- PASS: TestEnumsMatchValidation (0.71s)
+--- PASS: TestContactsFlow (1.00s)
+--- PASS: TestContactsRequireSession (0.21s)
+--- PASS: TestSendAndReceive (0.72s)
+--- PASS: TestBothDirections (0.69s)
+--- PASS: TestOpenBeforeReadyConnects (0.71s)
+--- PASS: TestSendReasons (0.64s)
+--- PASS: TestSendTooLargeForTransport (0.60s)
+--- PASS: TestDeliveryRequiresSession (0.17s)
+--- PASS: TestStrangerSameAnswer (0.78s)
+--- PASS: TestAckAndRedelivery (0.62s)
+--- PASS: TestDeliveryLogHasNoContent (0.58s)
+    delivery_test.go:501: SC-006: выход, завершение за 2.0009393s
+    delivery_test.go:501: SC-006: отключение, завершение за 1.9997414s
+    delivery_test.go:501: SC-006: закрытие собеседником, завершение за 593.9086ms
+    delivery_test.go:501: SC-006: удаление контакта, завершение за 591.9522ms
+--- PASS: TestStreamEnds (7.52s)
+    delivery_test.go:528: истечение сессии: завершение за 200.4366ms
+--- PASS: TestSessionExpiryEndsStream (0.58s)
+--- PASS: TestSecondStreamReplacesFirst (0.37s)
+--- PASS: TestClientGoneDisconnects (0.38s)
+--- PASS: TestInvalidSequence (0.49s)
+--- PASS: TestAckTimeout (0.53s)
+--- PASS: TestNonReadingClient (0.53s)
+--- PASS: TestWriterPanicIsRecovered (0.38s)
+--- PASS: TestStoreFailureDuringCheck (0.40s)
+--- PASS: TestQueueFullThroughServer (0.55s)
+--- PASS: TestBrokerDownThroughServer (0.46s)
+    delivery_test.go:842: остановка заняла 0s
+--- PASS: TestShutdownWithOpenStream (0.40s)
+--- PASS: TestToStatusMappings (0.00s)
+--- PASS: TestUnknownErrorHidesText (0.00s)
+--- PASS: TestContextErrors (0.00s)
+--- PASS: TestChatErrorMapping (0.00s)
+--- PASS: TestDeliveryErrorMapping (0.00s)
+--- PASS: TestFragmentFitsTransport (0.00s)
+--- PASS: TestStreamRequiresSession (0.22s)
+--- PASS: TestStreamInterceptorsLogAndRecover (0.00s)
+--- PASS: TestStreamPanicThroughServer (0.28s)
+PASS
+ok  	cryptochat/server/internal/rpc	28.847s
+--- PASS: TestParseFragmentLine (0.00s)
+--- PASS: TestSendFragmentsStopsAtBadLine (0.00s)
+--- PASS: TestSendFragmentsLineLimit (0.00s)
+--- PASS: TestReceivePrintsAndAcks (0.00s)
+--- PASS: TestReceiveShortIsAnError (0.02s)
+--- PASS: TestReceiveServerError (0.00s)
+PASS
+ok  	cryptochat/server/cmd/chatcli	0.217s
+--- PASS: TestDefaults (0.00s)
+--- PASS: TestOverrides (0.00s)
+--- PASS: TestBadValues (0.00s)
+--- PASS: TestDatabaseURL (0.00s)
+--- PASS: TestBrokerDefaults (0.00s)
+--- PASS: TestBrokerURL (0.00s)
+--- PASS: TestReadyAll (0.00s)
+PASS
+ok  	cryptochat/server/cmd/server	0.220s
+services=0
+test-containers-stop=0
+
+### server e2e: TestEndToEnd, TestChatsEndToEnd, TestDeliveryEndToEnd
+    chats_test.go:174: SC-007: CreateChat 13.7798ms
+    chats_test.go:186: SC-007: ListChats 5.5716ms
+    chats_test.go:190: SC-007: GetChat 4.4489ms
+    chats_test.go:191: SC-007: ConnectChat 7.8594ms
+    chats_test.go:192: SC-007: PublishPublicValue 6.6972ms
+    chats_test.go:196: SC-007: GetPeerPublicValue 3.4224ms
+    chats_test.go:197: SC-007: DisconnectChat 6.9763ms
+    chats_test.go:198: SC-007: CloseChat 10.4525ms
+    chats_test.go:210: SC-008: ошибка за 2.9458ms
+    chats_test.go:229: SC-008: восстановление за 29.8429ms
+--- PASS: TestChatsEndToEnd (70.57s)
+    delivery_test.go:295: SC-009: отправка не дольше 47.7011ms, доставка не дольше 47.7011ms
+    delivery_test.go:314: после restart rabbitmq: Health SERVING за 10.7046751s
+    delivery_test.go:327: SC-011: ожидающие фрагменты пережили перезапуск брокера, пересоздание контейнера и перезапуск сервера
+    delivery_test.go:335: остановка сервера с открытым потоком 760.8461ms
+    delivery_test.go:368: SC-010: ошибка за 4.8526ms
+    delivery_test.go:372: SC-010: брокер остановлен: Health NOT_SERVING за 1.6387ms
+    delivery_test.go:383: SC-010: брокер запущен: Health SERVING за 9.5883759s
+    delivery_test.go:386: SC-010: восстановление за 9.6986877s
+    delivery_test.go:408: запуск без брокера: брокер появился: Health SERVING за 10.3400994s
+    delivery_test.go:415: SC-005: закрытие чата: очереди исчезли за 1.6322804s
+    delivery_test.go:426: SC-005: закрытие при остановленном брокере: очереди исчезли за 10.6995572s
+    delivery_test.go:428: перед удалением контакта: Health SERVING за 1.1794ms
+    delivery_test.go:430: SC-005: удаление контакта: очереди исчезли за 1.6470068s
+--- PASS: TestDeliveryEndToEnd (114.30s)
+    e2e_test.go:130: SC-005: запуск до готовности 10.8473456s
+    e2e_test.go:185: SC-009: вход 87.8506ms
+    e2e_test.go:196: SC-009: список контактов 6.5956ms
+    e2e_test.go:251: SC-008: ошибка за 3.1228ms
+    e2e_test.go:259: SC-008: восстановление за 41.8873ms
+--- PASS: TestEndToEnd (61.31s)
+PASS
+ok  	cryptochat/server/test/e2e	246.275s
+e2e=0
+
+### integration e2e, тег e2e: согласование ключа
+--- PASS: TestKeyAgreementThroughServer (22.30s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-128 (0.08s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-128 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-192 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-192 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-256 (0.06s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-256 (0.07s)
+--- PASS: TestClientRejectsBadValues (16.95s)
+PASS
+ok  	cryptochat/integration	39.340s
+integration-e2e=0
+
+### integration e2e, теги e2e,devcipher: доставка текста и файла
+    delivery_test.go:345: SC-003: 2 сообщений в брокере совпали с отправленными байт в байт
+    delivery_test.go:371: SC-002: текст, имя и тип совпали
+    delivery_test.go:397: SC-002: файл 3145728 байт и 64 фрагментов совпал байт в байт
+    delivery_test.go:415: SC-008: наибольший фрагмент 50576 байт, запас до предела сервера 10864 байт
+    delivery_test.go:500: SC-004: повторных выдач 16, повторов при сборке 10
+    delivery_test.go:511: SC-003: метка не найдена на диске брокера, в журналах и базе
+    delivery_test.go:524: SC-005: очереди исчезли за 1.4703058s
+--- PASS: TestDeliveryEndToEnd (31.11s)
+--- PASS: TestKeyAgreementThroughServer (21.58s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-128 (0.08s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-128 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-192 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-192 (0.06s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-256 (0.07s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-256 (0.07s)
+--- PASS: TestClientRejectsBadValues (18.29s)
+PASS
+ok  	cryptochat/integration	71.066s
+integration-devcipher=0
+
+### ручной сценарий: Compose и chatcli
+ Container cryptochat-server-1 Starting 
+ Container cryptochat-server-1 Started 
+up=0
+healthy=0
+postgres Up 15 seconds (healthy)
+rabbitmq Up 15 seconds (healthy)
+server Up 12 seconds (healthy)
+зарегистрирован: alice
+register-a=0
+вход выполнен: alice
+login-a=0
+зарегистрирован: bob
+register-b=0
+вход выполнен: bob
+login-b=0
+запрос отправлен: bob
+contact-request=0
+готово: alice
+contact-accept=0
+chat-create=0
+создан чат: длина идентификатора 32
+активен собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=true собеседник_подключён=true готов=false
+chat-connect=0
+значение опубликовано
+key-a=0
+значение опубликовано
+key-b=0
+отправлено: 1
+send=0
+сообщений в очереди получателя: 1
+очередей чата: 1
+recv=0
+совпало: 2048 символов
+match=0
+сообщений в очереди получателя: 0
+очередей чата: 1
+активен собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=true собеседник_подключён=true готов=true
+chat-connect-2=0
+сбой брокера:
+ Container cryptochat-rabbitmq-1 Stopped 
+server Up 48 seconds (healthy)
+активен собеседник=bob создатель=alice RC6/256/CBC/PKCS7 я_подключён=true собеседник_подключён=true готов=true
+chats-without-broker=0
+отправлено: 0
+ошибка: BROKER_UNAVAILABLE
+exit status 1
+send при остановленном брокере: код 1
+send-fails=0
+ Container cryptochat-rabbitmq-1 Started 
+send снова работает через 4 попыток
+send-recovered=0
+aabb
+recv-after-failure=0
+закрыт собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=false собеседник_подключён=false готов=false
+chat-close=0
+очередей чата: 0
+порт брокера наружу:
+invalid IP:0
+rabbitmq 4369/tcp, 5671-5672/tcp, 15691-15692/tcp, 25672/tcp
+no-broker-port=0
+ Network cryptochat_default Removed 
+down=0
+
+ИТОГ: failed=0
+Fri Nov  6 21:57:49 RTZ 2026

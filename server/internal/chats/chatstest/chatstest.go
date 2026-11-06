@@ -1,4 +1,4 @@
-// Пакет chatstest содержит общую проверку правил из data-model.md: она запускается и на хранилище в
+// Пакет chatstest содержит общую проверку правил модели данных: она запускается и на хранилище в
 // памяти, и на настоящем Postgres. В сервер не входит.
 package chatstest
 
@@ -19,6 +19,7 @@ type Backend interface {
 	store.AccountStore
 	store.ContactStore
 	store.ChatStore
+	store.DeliveryStore
 }
 
 var (
@@ -137,6 +138,8 @@ func Run(t *testing.T, b Backend) {
 			fn()
 		})
 	}
+
+	runDelivery(t, e, section)
 
 	// US1: создание и закрытие.
 	section("начальное состояние", func() {

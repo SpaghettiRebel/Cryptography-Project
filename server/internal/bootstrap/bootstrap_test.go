@@ -85,6 +85,56 @@ func TestInitKeepsSecretsAndRefreshesPublicCert(t *testing.T) {
 	}
 }
 
+func TestInitBrokerSecrets(t *testing.T) {
+	secrets, certs := t.TempDir(), t.TempDir()
+	if err := Init(secrets, certs, -1); err != nil {
+		t.Fatal(err)
+	}
+	password := mustRead(t, filepath.Join(secrets, BrokerPasswordFile))
+	if len(password) < 32 {
+		t.Fatalf("пароль брокера: %d байт", len(password))
+	}
+	if bytes.Equal(password, mustRead(t, filepath.Join(secrets, DBPasswordFile))) {
+		t.Error("пароль брокера совпал с паролем базы")
+	}
+	wantConfig := "default_user = cryptochat\ndefault_pass = " + string(password) + "\nlog.console = true\n"
+	if got := string(mustRead(t, filepath.Join(secrets, BrokerConfigFile))); got != wantConfig {
+		t.Errorf("файл настроек: %q", got)
+	}
+	if runtime.GOOS != "windows" {
+		for _, name := range []string{BrokerPasswordFile, BrokerConfigFile} {
+			info, err := os.Stat(filepath.Join(secrets, name))
+			if err != nil || info.Mode().Perm() != 0o644 {
+				t.Errorf("%s: %v, %v", name, info.Mode().Perm(), err)
+			}
+		}
+	}
+	for _, name := range []string{BrokerPasswordFile, BrokerConfigFile} {
+		if _, err := os.Stat(filepath.Join(certs, name)); err == nil {
+			t.Errorf("%s попал в папку клиента", name)
+		}
+	}
+
+	// Повторный запуск пароль не меняет.
+	if err := Init(secrets, certs, -1); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(password, mustRead(t, filepath.Join(secrets, BrokerPasswordFile))) {
+		t.Error("пароль брокера изменён")
+	}
+
+	// Обновление тома: файл настроек создаётся из уже существующего пароля.
+	if err := os.Remove(filepath.Join(secrets, BrokerConfigFile)); err != nil {
+		t.Fatal(err)
+	}
+	if err := Init(secrets, certs, -1); err != nil {
+		t.Fatal(err)
+	}
+	if got := string(mustRead(t, filepath.Join(secrets, BrokerConfigFile))); got != wantConfig {
+		t.Errorf("файл настроек после восстановления: %q", got)
+	}
+}
+
 func TestTLSHandshake(t *testing.T) {
 	secrets, certs := t.TempDir(), t.TempDir()
 	if err := Init(secrets, certs, -1); err != nil {

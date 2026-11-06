@@ -208,3 +208,19 @@ func FuzzUnmarshal(f *testing.F) {
 		}
 	})
 }
+
+// Наибольший фрагмент формата занимает ровно MaxWireSize.
+func TestMaxWireSize(t *testing.T) {
+	if MaxWireSize != 53312 {
+		t.Fatalf("MaxWireSize = %d", MaxWireSize)
+	}
+	f := sample()
+	f.Cipher = make([]byte, MaxCipherLen)
+	data, err := f.Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) != MaxWireSize {
+		t.Fatalf("размер сериализации %d, MaxWireSize %d", len(data), MaxWireSize)
+	}
+}

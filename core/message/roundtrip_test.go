@@ -62,7 +62,7 @@ func roundTrip(t *testing.T, p Params, meta Meta, data []byte) {
 func TestRoundTrip(t *testing.T) {
 	sizes := []int{0, 1, 15, 16, 17}
 	if !testing.Short() {
-		sizes = append(sizes, ChunkSize, ChunkSize+1, 2*ChunkSize+100)
+		sizes = append(sizes, ChunkSize, ChunkSize+1, 2*ChunkSize+100, 1<<20+100)
 	}
 	for _, mode := range modes.AllCipherModes {
 		for _, pad := range modes.AllPaddingModes {
@@ -87,7 +87,7 @@ func TestTrailingZerosSurvive(t *testing.T) {
 		for _, pad := range modes.AllPaddingModes {
 			roundTrip(t, testParams(t, mode, pad), Meta{TotalSize: int64(len(data))}, data)
 			if !testing.Short() {
-				zeros := make([]byte, ChunkSize+40)
+				zeros := make([]byte, 1<<20+40)
 				roundTrip(t, testParams(t, mode, pad), Meta{TotalSize: int64(len(zeros))}, zeros)
 			}
 		}

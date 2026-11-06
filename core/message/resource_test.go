@@ -79,8 +79,8 @@ func TestMemory(t *testing.T) {
 		t.Fatalf("в пике %d объёмов фрагментов, допустимо 16", peak.Load())
 	}
 	// Замер кучи шумит из-за самой среды выполнения и сборщика, поэтому главный критерий — счётчик выше.
-	// Запас поверх 16 МиБ покрывает мусор, ещё не убранный сборщиком, и расшифрование в Assembler.
-	const heapLimit = 64 << 20
+	// 16 объёмов занимают меньше 1 МиБ; запас покрывает мусор, ещё не убранный сборщиком, и расшифрование в Assembler.
+	const heapLimit = 16 << 20
 	growth := int64(heapPeak.Load()) - int64(before.HeapAlloc)
 	t.Logf("пик счётчика %d, рост кучи %.1f МиБ", peak.Load(), float64(growth)/(1<<20))
 	if growth > heapLimit {
@@ -119,7 +119,7 @@ func TestCancel(t *testing.T) {
 
 	// В середине.
 	ctx, cancel = context.WithCancel(context.Background())
-	const size = 64 * ChunkSize
+	const size = 64 << 20
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		cancel()

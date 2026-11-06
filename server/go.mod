@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/jackc/pgx/v5 v5.7.2
+	github.com/rabbitmq/amqp091-go v1.16.0
 	golang.org/x/crypto v0.31.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142
 	google.golang.org/grpc v1.67.3

@@ -49,8 +49,8 @@ type AccountStore interface {
 	DeleteExpiredSessions(ctx context.Context, userID string, now time.Time) error
 }
 
-// ContactStore выполняет каждую операцию над парой пользователей атомарно: правила переходов из
-// data-model.md должны выполняться и при одновременных запросах.
+// ContactStore выполняет каждую операцию над парой пользователей атомарно: правила переходов
+// должны выполняться и при одновременных запросах.
 type ContactStore interface {
 	// SendRequest возвращает true, если встречный запрос сразу создал контакт.
 	SendRequest(ctx context.Context, senderID, recipientNorm string) (bool, error)

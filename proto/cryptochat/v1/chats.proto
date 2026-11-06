@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "cryptochat/server/api/v1;apiv1";
 
 // Ошибки возвращаются кодом gRPC и google.rpc.ErrorInfo, домен "cryptochat".
-// Причины перечислены в исследование решений. Все методы требуют сессию в метаданных
+// Все методы требуют сессию в метаданных
 // authorization: Bearer <token>; без неё UNAUTHENTICATED/UNAUTHENTICATED.
 // chat_id всегда 16 байт, иначе INVALID_ARGUMENT/INVALID_CHAT_ID. Для пользователя, который не
 // участвует в чате, и для несуществующего чата ответ один: NOT_FOUND/CHAT_NOT_FOUND.

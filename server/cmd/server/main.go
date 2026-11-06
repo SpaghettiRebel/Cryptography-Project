@@ -20,8 +20,10 @@ import (
 	"cryptochat/server/internal/bootstrap"
 	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/delivery"
 	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/postgres"
+	"cryptochat/server/internal/rabbit"
 	"cryptochat/server/internal/rpc"
 )
 
@@ -67,6 +69,10 @@ func serve(cfg config) error {
 	if err != nil {
 		return err
 	}
+	brokerURL, err := cfg.brokerURL(os.ReadFile)
+	if err != nil {
+		return err
+	}
 	tlsConfig, err := bootstrap.ServerTLS(cfg.TLSCert, cfg.TLSKey)
 	if err != nil {
 		return err
@@ -86,13 +92,24 @@ func serve(cfg config) error {
 	if err != nil {
 		return err
 	}
+	// Запуск брокера не ждёт: сервер работает и без него, а готовым становится при открытом соединении.
+	broker := rabbit.New(brokerURL, logger, rabbit.Limits{})
+	brokerCtx, stopBroker := context.WithCancel(context.Background())
+	defer stopBroker()
+	brokerDone := make(chan struct{})
+	go func() {
+		defer close(brokerDone)
+		broker.Run(brokerCtx)
+	}()
+	deliverySvc := delivery.New(db, db, broker, logger, delivery.Options{})
 	srv := rpc.NewServer(tlsConfig, rpc.Deps{
 		Accounts:    acc,
 		Contacts:    contacts.New(db),
 		Chats:       chats.New(db),
 		KeyExchange: keyexchange.New(db),
+		Delivery:    deliverySvc,
 		Logger:      logger,
-		Ready:       db.Ping,
+		Ready:       readyAll(db.Ping, func(context.Context) error { return broker.Ready() }),
 	})
 
 	lis, err := net.Listen("tcp", cfg.Listen)
@@ -102,6 +119,13 @@ func serve(cfg config) error {
 	healthCtx, stopHealth := context.WithCancel(ctx)
 	defer stopHealth()
 	go srv.RunHealth(healthCtx)
+	cleanupCtx, stopCleanup := context.WithCancel(context.Background())
+	defer stopCleanup()
+	cleanupDone := make(chan struct{})
+	go func() {
+		defer close(cleanupDone)
+		deliverySvc.RunCleanup(cleanupCtx)
+	}()
 
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- srv.GRPC.Serve(lis) }()
@@ -115,6 +139,8 @@ func serve(cfg config) error {
 	logger.Info("остановка")
 	stopHealth()
 	srv.Shutdown()
+	// Потоки завершаются раньше GracefulStop, иначе он ждал бы их весь предел.
+	deliverySvc.Shutdown()
 	stopped := make(chan struct{})
 	go func() {
 		srv.GRPC.GracefulStop()
@@ -125,6 +151,11 @@ func serve(cfg config) error {
 	case <-time.After(stopTimeout):
 		srv.GRPC.Stop()
 	}
+	stopCleanup()
+	<-cleanupDone
+	stopBroker()
+	<-brokerDone
+	broker.Close()
 	logger.Info("сервер остановлен")
 	return nil
 }

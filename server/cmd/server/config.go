@@ -16,6 +16,9 @@ type config struct {
 	DBName         string
 	DBUser         string
 	DBPasswordFile string
+	BrokerHost     string
+	BrokerUser     string
+	BrokerPassFile string
 	TLSCert        string
 	TLSKey         string
 	LogLevel       slog.Level
@@ -39,6 +42,9 @@ func loadConfig(getenv func(string) string) (config, error) {
 		DBName:         env(getenv, "CHAT_DB_NAME", "cryptochat"),
 		DBUser:         env(getenv, "CHAT_DB_USER", "cryptochat"),
 		DBPasswordFile: env(getenv, "CHAT_DB_PASSWORD_FILE", "/secrets/db_password"),
+		BrokerHost:     env(getenv, "CHAT_BROKER_HOST", "rabbitmq:5672"),
+		BrokerUser:     env(getenv, "CHAT_BROKER_USER", "cryptochat"),
+		BrokerPassFile: env(getenv, "CHAT_BROKER_PASSWORD_FILE", "/secrets/rabbitmq_password"),
 		TLSCert:        env(getenv, "CHAT_TLS_CERT", "/secrets/server.crt"),
 		TLSKey:         env(getenv, "CHAT_TLS_KEY", "/secrets/server.key"),
 		SecretsDir:     env(getenv, "CHAT_SECRETS_DIR", "/secrets"),
@@ -73,5 +79,19 @@ func (c config) databaseURL(readFile func(string) ([]byte, error)) (string, erro
 		Path:     "/" + c.DBName,
 		RawQuery: "sslmode=disable",
 	}
+	return u.String(), nil
+}
+
+// brokerURL читает пароль брокера из файла. Ошибка не содержит его значения.
+func (c config) brokerURL(readFile func(string) ([]byte, error)) (string, error) {
+	raw, err := readFile(c.BrokerPassFile)
+	if err != nil {
+		return "", fmt.Errorf("config: файл пароля брокера %s: %w", c.BrokerPassFile, errors.Unwrap(err))
+	}
+	password := strings.TrimSpace(string(raw))
+	if password == "" {
+		return "", fmt.Errorf("config: файл пароля брокера %s пуст", c.BrokerPassFile)
+	}
+	u := url.URL{Scheme: "amqp", User: url.UserPassword(c.BrokerUser, password), Host: c.BrokerHost, Path: "/"}
 	return u.String(), nil
 }

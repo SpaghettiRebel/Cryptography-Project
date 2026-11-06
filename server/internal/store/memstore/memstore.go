@@ -18,7 +18,7 @@ type session struct {
 
 type pair struct{ a, b string }
 
-// Store реализует store.AccountStore, store.ContactStore и store.ChatStore.
+// Store реализует store.AccountStore, store.ContactStore, store.ChatStore и store.DeliveryStore.
 type Store struct {
 	mu       sync.Mutex
 	nextID   int
@@ -29,6 +29,7 @@ type Store struct {
 	contacts map[pair]bool // упорядоченная пара
 	chats    map[[16]byte]*chatRow
 	chatSeq  int
+	closeSeq int
 }
 
 // New создаёт пустое хранилище.

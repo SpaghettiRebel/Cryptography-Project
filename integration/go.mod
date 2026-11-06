@@ -5,6 +5,7 @@ go 1.22
 require (
 	cryptochat/core v0.0.0
 	cryptochat/server v0.0.0
+	github.com/rabbitmq/amqp091-go v1.16.0
 	google.golang.org/grpc v1.67.3
 )
 

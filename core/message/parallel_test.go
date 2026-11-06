@@ -35,7 +35,7 @@ func sealWith(t *testing.T, p Params, workers int, size int64) []*protocol.Fragm
 }
 
 func TestParallel(t *testing.T) {
-	const size = 9*ChunkSize + 123
+	const size = 9<<20 + 123
 	for _, mode := range modes.AllCipherModes {
 		// Здесь набивка без случайных байтов: иначе результат отличался бы и без параллельности.
 		p := testParams(t, mode, modes.PKCS7)
@@ -67,7 +67,7 @@ func TestParallelSpeedup(t *testing.T) {
 	if err := c.SetKey(p.Key); err != nil {
 		t.Fatal(err)
 	}
-	const size = 20 * ChunkSize
+	const size = 20 << 20
 	measure := func(workers int) time.Duration {
 		cfg := sealConfig{cipher: c, rand: &detReader{state: 7}, workers: workers}
 		start := time.Now()

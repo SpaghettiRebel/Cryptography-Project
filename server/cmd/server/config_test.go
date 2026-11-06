@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -64,5 +65,50 @@ func TestDatabaseURL(t *testing.T) {
 	}
 	if _, err := c.databaseURL(func(string) ([]byte, error) { return []byte(" \n"), nil }); err == nil {
 		t.Fatal("пустой файл")
+	}
+}
+
+func TestBrokerDefaults(t *testing.T) {
+	c, err := loadConfig(envMap(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.BrokerHost != "rabbitmq:5672" || c.BrokerUser != "cryptochat" || c.BrokerPassFile != "/secrets/rabbitmq_password" {
+		t.Fatalf("%+v", c)
+	}
+	c, err = loadConfig(envMap(map[string]string{"CHAT_BROKER_HOST": "h:1", "CHAT_BROKER_USER": "u", "CHAT_BROKER_PASSWORD_FILE": "/p"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.BrokerHost != "h:1" || c.BrokerUser != "u" || c.BrokerPassFile != "/p" {
+		t.Fatalf("%+v", c)
+	}
+}
+
+func TestBrokerURL(t *testing.T) {
+	c, _ := loadConfig(envMap(nil))
+	const password = "па/роль:secret@?#%"
+	raw, err := c.brokerURL(func(string) ([]byte, error) { return []byte(password + "\n"), nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := u.User.Password()
+	if u.Scheme != "amqp" || u.Host != "rabbitmq:5672" || u.User.Username() != "cryptochat" || got != password || u.Path != "/" {
+		t.Fatalf("%s", raw)
+	}
+	_, err = c.brokerURL(func(string) ([]byte, error) { return nil, &os.PathError{Op: "open", Path: "x", Err: os.ErrNotExist} })
+	if err == nil || !strings.Contains(err.Error(), "/secrets/rabbitmq_password") {
+		t.Fatalf("нет файла: %v", err)
+	}
+	_, err = c.brokerURL(func(string) ([]byte, error) { return []byte(" \n"), nil })
+	if err == nil {
+		t.Fatal("пустой файл")
+	}
+	if strings.Contains(err.Error(), password) {
+		t.Fatal("ошибка содержит пароль")
 	}
 }

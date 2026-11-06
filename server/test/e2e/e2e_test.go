@@ -1,6 +1,6 @@
 //go:build e2e
 
-// Сквозная проверка на настоящем Compose: go test -tags e2e ./test/e2e -v -timeout 15m
+// Сквозная проверка на настоящем Compose: go test -tags e2e ./test/e2e -v -timeout 20m
 package e2e
 
 import (
@@ -120,7 +120,7 @@ func TestEndToEnd(t *testing.T) {
 
 	// Образы собираются отдельно: SC-005 относится ко времени после загрузки образов.
 	s.must("build")
-	s.must("pull", "postgres")
+	s.must("pull", "postgres", "rabbitmq")
 
 	start := time.Now()
 	s.must("up", "-d")

@@ -23,6 +23,11 @@ const (
 	DBPasswordFile = "db_password"
 	ServerCertFile = "server.crt"
 	ServerKeyFile  = "server.key"
+	// BrokerPasswordFile читает сервер, BrokerConfigFile — брокер.
+	BrokerPasswordFile = "rabbitmq_password"
+	BrokerConfigFile   = "rabbitmq.conf"
+	// BrokerUser — пользователь брокера, общий для сервера и файла настроек.
+	BrokerUser = "cryptochat"
 )
 
 // Init создаёт отсутствующие секреты в secretsDir; существующие не меняет. Открытый сертификат всегда
@@ -36,6 +41,9 @@ func Init(secretsDir, certsDir string, owner int) error {
 		return fmt.Errorf("bootstrap: папка сертификатов: %w", err)
 	}
 	if err := ensurePassword(filepath.Join(secretsDir, DBPasswordFile)); err != nil {
+		return err
+	}
+	if err := ensureBrokerSecrets(secretsDir); err != nil {
 		return err
 	}
 	certPath := filepath.Join(secretsDir, ServerCertFile)
@@ -84,6 +92,26 @@ func ensurePassword(path string) error {
 	// 0644: файл читают и сервер, и Postgres под разными пользователями; том подключён только к ним.
 	if err := os.WriteFile(path, []byte(base64.RawURLEncoding.EncodeToString(raw)), 0o644); err != nil {
 		return fmt.Errorf("bootstrap: запись пароля: %w", err)
+	}
+	return nil
+}
+
+// ensureBrokerSecrets создаёт пароль брокера и файл настроек. Переменной с файлом пароля образ брокера не
+// поддерживает, поэтому пароль попадает к нему через файл настроек, который всегда собирается из файла
+// пароля и не может с ним разойтись.
+func ensureBrokerSecrets(secretsDir string) error {
+	passwordPath := filepath.Join(secretsDir, BrokerPasswordFile)
+	if err := ensurePassword(passwordPath); err != nil {
+		return err
+	}
+	password, err := os.ReadFile(passwordPath)
+	if err != nil {
+		return errors.New("bootstrap: чтение пароля брокера")
+	}
+	config := fmt.Sprintf("default_user = %s\ndefault_pass = %s\nlog.console = true\n", BrokerUser, password)
+	// 0644: как и пароль базы, файл читает другой пользователь контейнера.
+	if err := os.WriteFile(filepath.Join(secretsDir, BrokerConfigFile), []byte(config), 0o644); err != nil {
+		return errors.New("bootstrap: запись настроек брокера")
 	}
 	return nil
 }

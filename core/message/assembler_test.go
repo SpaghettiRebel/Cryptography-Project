@@ -108,7 +108,7 @@ func TestInnerBindingViolations(t *testing.T) {
 		"чужое сообщение":     {func() *inner { i := good(); i.messageID[0] ^= 1; return i }, 0, 2},
 		"номер не совпал":     {func() *inner { i := good(); i.index = 1; return i }, 0, 2},
 		"Total не по размеру": {func() *inner { i := good(); return i }, 0, 3},
-		"кусок не 1 МиБ":      {func() *inner { i := good(); i.data = chunk[:100]; return i }, 0, 2},
+		"кусок не полный":     {func() *inner { i := good(); i.data = chunk[:100]; return i }, 0, 2},
 		"последний не тот":    {func() *inner { i := good(); i.index = 1; i.data = chunk[:6]; return i }, 1, 2},
 		"имя не во фрагменте 0": {func() *inner {
 			i := good()
@@ -317,4 +317,36 @@ func TestSealZeroLengthReads(t *testing.T) {
 	if err := seal(bg, testConfig(t, p), p, testMessageID, Meta{TotalSize: 3}, &oneByteReader{data: []byte{1, 2, 3, 4}}, drop, nil); !errors.Is(err, ErrSizeMismatch) {
 		t.Errorf("длиннее заявленного: %v", err)
 	}
+}
+
+// serverFragmentLimit — предел сервера на фрагмент. Модули не зависят друг от друга, поэтому значение
+// записано числом.
+const serverFragmentLimit = 61440
+
+// Наибольший кусок с наибольшими именем и типом укладывается в формат и в предел сервера при любом режиме.
+func TestLargestFragmentFits(t *testing.T) {
+	if ChunkSize != 49152 {
+		t.Fatalf("ChunkSize = %d", ChunkSize)
+	}
+	if protocol.MaxWireSize >= serverFragmentLimit {
+		t.Fatalf("MaxWireSize %d не меньше предела сервера", protocol.MaxWireSize)
+	}
+	meta := Meta{Name: strings.Repeat("x", MaxNameLen), Type: strings.Repeat("y", MaxTypeLen), TotalSize: ChunkSize}
+	largest := 0
+	for _, mode := range modes.AllCipherModes {
+		for _, pad := range modes.AllPaddingModes {
+			p := testParams(t, mode, pad)
+			for _, f := range sealAll(t, p, meta, make([]byte, ChunkSize)) {
+				wire, err := f.Marshal()
+				if err != nil {
+					t.Fatalf("%s/%s: %v", mode, pad, err)
+				}
+				largest = max(largest, len(wire))
+			}
+		}
+	}
+	if largest > protocol.MaxWireSize || largest > serverFragmentLimit {
+		t.Fatalf("наибольший фрагмент %d байт", largest)
+	}
+	t.Logf("наибольший фрагмент %d байт", largest)
 }

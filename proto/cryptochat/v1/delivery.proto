@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package cryptochat.v1;
+
+option go_package = "cryptochat/server/api/v1;apiv1";
+
+// Ошибки возвращаются кодом gRPC и google.rpc.ErrorInfo, домен "cryptochat", причины указаны у методов.
+// Все методы требуют сессию в метаданных authorization: Bearer <token>.
+// chat_id всегда 16 байт, иначе INVALID_ARGUMENT/INVALID_CHAT_ID. Для пользователя, который не
+// участвует в чате, и для несуществующего чата ответ один: NOT_FOUND/CHAT_NOT_FOUND.
+// Фрагмент для сервера непрозрачен: сервер его не разбирает и передаёт без изменений.
+
+service Delivery {
+  // Успешный ответ означает, что брокер принял фрагмент; получателя сервер не ждёт. Повтор после
+  // обрыва может дать получателю второй такой же фрагмент: сборка на клиенте игнорирует повторы.
+  // INVALID_ARGUMENT/INVALID_FRAGMENT, INVALID_ARGUMENT/FRAGMENT_TOO_LARGE,
+  // FAILED_PRECONDITION/CHAT_CLOSED, FAILED_PRECONDITION/NOT_CONNECTED,
+  // FAILED_PRECONDITION/CHAT_NOT_READY, RESOURCE_EXHAUSTED/QUEUE_FULL,
+  // UNAVAILABLE/BROKER_UNAVAILABLE, UNAVAILABLE/STORE_UNAVAILABLE.
+  // Запрос больше 64 КиБ отвергает транспорт: RESOURCE_EXHAUSTED без причины.
+  rpc SendFragment(SendFragmentRequest) returns (SendFragmentResponse);
+
+  // Первое сообщение клиента — open, не позже чем через 10 с. Открытие подключает участника; ответ
+  // на него — opened. Неудачное открытие не меняет ни подключение, ни работающий поток. Дальше клиент
+  // посылает только ack и только после надёжного сохранения фрагмента: подтверждённое удаляется безвозвратно.
+  // У участника и чата один поток: новый заменяет старый. Неподтверждённые фрагменты доставляются снова,
+  // порядок не гарантирован. После BROKER_UNAVAILABLE, STORE_UNAVAILABLE и SERVER_STOPPING участник остаётся
+  // подключённым, и клиент открывает поток заново. Поток завершается статусом:
+  // UNAUTHENTICATED/UNAUTHENTICATED, FAILED_PRECONDITION/NOT_CONNECTED, FAILED_PRECONDITION/CHAT_CLOSED,
+  // ABORTED/STREAM_REPLACED, DEADLINE_EXCEEDED/ACK_TIMEOUT, INVALID_ARGUMENT/INVALID_STREAM_REQUEST,
+  // UNAVAILABLE/BROKER_UNAVAILABLE, UNAVAILABLE/STORE_UNAVAILABLE, UNAVAILABLE/SERVER_STOPPING.
+  rpc ReceiveFragments(stream ReceiveRequest) returns (stream ReceiveEvent);
+}
+
+message SendFragmentRequest {
+  bytes chat_id = 1;
+  // От 1 до 61440 байт. Обычно результат protocol.Fragment.Marshal из криптоядра клиента.
+  bytes fragment = 2;
+}
+
+message SendFragmentResponse {}
+
+message ReceiveRequest {
+  message Open {
+    bytes chat_id = 1;
+  }
+  message Ack {
+    // Номер из FragmentDelivery. Неизвестный или уже подтверждённый номер игнорируется.
+    uint64 delivery_id = 1;
+  }
+  oneof kind {
+    Open open = 1;
+    Ack ack = 2;
+  }
+}
+
+message ReceiveEvent {
+  message Opened {}
+  oneof kind {
+    Opened opened = 1;
+    FragmentDelivery fragment = 2;
+  }
+}
+
+message FragmentDelivery {
+  // Действует только в этом потоке.
+  uint64 delivery_id = 1;
+  bytes fragment = 2;
+  // true, если брокер уже выдавал этот фрагмент раньше.
+  bool redelivered = 3;
+}

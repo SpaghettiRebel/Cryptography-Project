@@ -10,6 +10,7 @@ import (
 
 	"cryptochat/server/internal/accounts"
 	"cryptochat/server/internal/chats"
+	"cryptochat/server/internal/delivery"
 	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/store"
 )
@@ -17,7 +18,7 @@ import (
 // Domain — домен причин в ErrorInfo.
 const Domain = "cryptochat"
 
-// Причины ошибок API (исследование решений, R7).
+// Причины ошибок API.
 const (
 	ReasonLoginTaken         = "LOGIN_TAKEN"
 	ReasonInvalidLogin       = "INVALID_LOGIN"
@@ -41,6 +42,16 @@ const (
 	ReasonNotConnected          = "NOT_CONNECTED"
 	ReasonInvalidPublicValue    = "INVALID_PUBLIC_VALUE"
 	ReasonValueAlreadyPublished = "VALUE_ALREADY_PUBLISHED"
+	// Доставка.
+	ReasonInvalidFragment      = "INVALID_FRAGMENT"
+	ReasonFragmentTooLarge     = "FRAGMENT_TOO_LARGE"
+	ReasonChatNotReady         = "CHAT_NOT_READY"
+	ReasonQueueFull            = "QUEUE_FULL"
+	ReasonBrokerUnavailable    = "BROKER_UNAVAILABLE"
+	ReasonStreamReplaced       = "STREAM_REPLACED"
+	ReasonAckTimeout           = "ACK_TIMEOUT"
+	ReasonInvalidStreamRequest = "INVALID_STREAM_REQUEST"
+	ReasonServerStopping       = "SERVER_STOPPING"
 )
 
 // fieldKey — ключ имени неверного параметра в ErrorInfo.Metadata.
@@ -74,6 +85,15 @@ var errorMappings = []mapping{
 	{store.ErrNotConnected, codes.FailedPrecondition, ReasonNotConnected, "участник не подключён к чату"},
 	{keyexchange.ErrInvalidPublicValue, codes.InvalidArgument, ReasonInvalidPublicValue, "открытое значение должно занимать 256 байт"},
 	{store.ErrValueConflict, codes.AlreadyExists, ReasonValueAlreadyPublished, "опубликовано другое значение"},
+	{delivery.ErrInvalidFragment, codes.InvalidArgument, ReasonInvalidFragment, "пустой фрагмент"},
+	{delivery.ErrFragmentTooLarge, codes.InvalidArgument, ReasonFragmentTooLarge, "фрагмент больше допустимого"},
+	{delivery.ErrChatNotReady, codes.FailedPrecondition, ReasonChatNotReady, "чат не готов к обмену"},
+	{delivery.ErrQueueFull, codes.ResourceExhausted, ReasonQueueFull, "очередь получателя заполнена"},
+	{delivery.ErrBrokerUnavailable, codes.Unavailable, ReasonBrokerUnavailable, "брокер недоступен"},
+	{delivery.ErrStreamReplaced, codes.Aborted, ReasonStreamReplaced, "поток заменён новым"},
+	{delivery.ErrAckTimeout, codes.DeadlineExceeded, ReasonAckTimeout, "нет подтверждения фрагмента"},
+	{delivery.ErrInvalidStreamRequest, codes.InvalidArgument, ReasonInvalidStreamRequest, "неверная последовательность сообщений"},
+	{delivery.ErrStopping, codes.Unavailable, ReasonServerStopping, "сервер останавливается"},
 }
 
 // toStatus превращает ошибку сервиса в ответ. Текст исходной ошибки наружу не передаётся.

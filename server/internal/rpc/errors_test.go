@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"cryptochat/server/internal/chats"
+	"cryptochat/server/internal/delivery"
 	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/store"
 )
@@ -72,5 +73,36 @@ func TestChatErrorMapping(t *testing.T) {
 	internal := toStatus(errors.New("postgres: P0001: значение-из-запроса"))
 	if status.Code(internal) != codes.Internal || strings.Contains(internal.Error(), "значение-из-запроса") {
 		t.Errorf("внутренняя ошибка: %v", internal)
+	}
+}
+
+func TestDeliveryErrorMapping(t *testing.T) {
+	cases := []struct {
+		err    error
+		code   codes.Code
+		reason string
+	}{
+		{delivery.ErrInvalidFragment, codes.InvalidArgument, "INVALID_FRAGMENT"},
+		{delivery.ErrFragmentTooLarge, codes.InvalidArgument, "FRAGMENT_TOO_LARGE"},
+		{delivery.ErrChatNotReady, codes.FailedPrecondition, "CHAT_NOT_READY"},
+		{delivery.ErrQueueFull, codes.ResourceExhausted, "QUEUE_FULL"},
+		{delivery.ErrBrokerUnavailable, codes.Unavailable, "BROKER_UNAVAILABLE"},
+		{delivery.ErrStreamReplaced, codes.Aborted, "STREAM_REPLACED"},
+		{delivery.ErrAckTimeout, codes.DeadlineExceeded, "ACK_TIMEOUT"},
+		{delivery.ErrInvalidStreamRequest, codes.InvalidArgument, "INVALID_STREAM_REQUEST"},
+		{delivery.ErrStopping, codes.Unavailable, "SERVER_STOPPING"},
+	}
+	for _, c := range cases {
+		got := toStatus(fmt.Errorf("обёртка: %w", c.err))
+		if status.Code(got) != c.code || ReasonOf(got) != c.reason {
+			t.Errorf("%v: %v, %q", c.err, status.Code(got), ReasonOf(got))
+		}
+	}
+}
+
+// Наибольший фрагмент вместе с конвертом помещается в предел запроса.
+func TestFragmentFitsTransport(t *testing.T) {
+	if delivery.MaxFragmentSize+24 > MaxMessageSize {
+		t.Fatalf("фрагмент %d и конверт 24 больше предела %d", delivery.MaxFragmentSize, MaxMessageSize)
 	}
 }
