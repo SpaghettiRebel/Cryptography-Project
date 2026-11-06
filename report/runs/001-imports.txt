@@ -1,0 +1,10 @@
+cryptochat/core/algorithms: cryptochat/core/cipher slices
+cryptochat/core/cipher: cryptochat/core/modes errors fmt
+cryptochat/core/cryptoctx: context crypto/rand cryptochat/core/cipher cryptochat/core/modes cryptochat/core/padding fmt os runtime sync
+cryptochat/core/dh: crypto/rand errors fmt io math/big
+cryptochat/core/internal/stubcipher: cryptochat/core/cipher encoding/binary math/bits runtime sync/atomic
+cryptochat/core/kdf: crypto/hmac crypto/sha256 cryptochat/core/cipher encoding/binary errors
+cryptochat/core/message: context crypto/rand cryptochat/core/algorithms cryptochat/core/cipher cryptochat/core/cryptoctx cryptochat/core/padding cryptochat/core/protocol encoding/binary errors fmt io runtime sync
+cryptochat/core/modes: fmt
+cryptochat/core/padding: crypto/rand cryptochat/core/modes errors fmt
+cryptochat/core/protocol: encoding/binary errors

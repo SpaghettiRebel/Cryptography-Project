@@ -1,0 +1,10 @@
+.claude
+.specify
+specs
+report
+docs
+deploy/certs
+core
+proto
+*.tmp
+*.exe

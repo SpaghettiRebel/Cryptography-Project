@@ -1,0 +1,10 @@
+# Генерация из папки project:
+# MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W):/w" -w /w bufbuild/buf:1.47.2 generate
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.34.2
+    out: server
+    opt: module=cryptochat/server
+  - remote: buf.build/grpc/go:v1.5.1
+    out: server
+    opt: module=cryptochat/server

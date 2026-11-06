@@ -1,0 +1,65 @@
+# Запуск из папки project: docker compose -f deploy/compose.yaml up --build
+name: cryptochat
+
+x-server-build: &server-build
+  context: ..
+  dockerfile: deploy/server.Dockerfile
+
+services:
+  # Один раз создаёт секреты и сертификат; root нужен только для создания файлов в томе.
+  init:
+    build: *server-build
+    image: cryptochat-server
+    user: "0:0"
+    command: ["init"]
+    volumes:
+      - secrets:/secrets
+      - ${CHAT_CERTS_DIR:-./certs}:/certs
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: cryptochat
+      POSTGRES_DB: cryptochat
+      POSTGRES_PASSWORD_FILE: /secrets/db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cryptochat -d cryptochat"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    # Порт наружу не открыт: к базе обращается только сервер.
+
+  server:
+    build: *server-build
+    image: cryptochat-server
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    volumes:
+      - secrets:/secrets:ro
+    ports:
+      - "${CHAT_PUBLIC_PORT:-8443}:8443"
+    stop_grace_period: 15s
+    healthcheck:
+      test: ["CMD", "/server", "healthcheck"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 3s
+
+volumes:
+  secrets:
+  pgdata:

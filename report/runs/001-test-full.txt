@@ -1,0 +1,68 @@
+== build
+== vet
+== gofmt
+== short
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.285s
+ok  	cryptochat/core/cryptoctx	0.773s
+ok  	cryptochat/core/dh	0.657s
+ok  	cryptochat/core/internal/stubcipher	0.293s
+ok  	cryptochat/core/kdf	0.290s
+ok  	cryptochat/core/message	1.623s
+ok  	cryptochat/core/modes	0.262s
+ok  	cryptochat/core/padding	0.298s
+ok  	cryptochat/core/protocol	0.389s
+== full
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.913s
+ok  	cryptochat/core/cryptoctx	0.927s
+ok  	cryptochat/core/dh	35.060s
+ok  	cryptochat/core/internal/stubcipher	0.312s
+ok  	cryptochat/core/kdf	0.305s
+ok  	cryptochat/core/message	19.595s
+ok  	cryptochat/core/modes	0.293s
+ok  	cryptochat/core/padding	0.310s
+ok  	cryptochat/core/protocol	1.243s
+== devcipher
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.299s
+ok  	cryptochat/core/cryptoctx	0.835s
+ok  	cryptochat/core/dh	34.990s
+ok  	cryptochat/core/internal/stubcipher	0.297s
+ok  	cryptochat/core/kdf	0.280s
+ok  	cryptochat/core/message	19.680s
+ok  	cryptochat/core/modes	0.292s
+ok  	cryptochat/core/padding	0.300s
+ok  	cryptochat/core/protocol	1.019s
+== race
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	1.296s
+ok  	cryptochat/core/cryptoctx	2.017s
+ok  	cryptochat/core/dh	2.672s
+ok  	cryptochat/core/internal/stubcipher	1.313s
+ok  	cryptochat/core/kdf	1.313s
+ok  	cryptochat/core/message	21.243s
+ok  	cryptochat/core/modes	1.266s
+ok  	cryptochat/core/padding	1.280s
+ok  	cryptochat/core/protocol	1.479s
+== SC
+    parallel_test.go:82: последовательно 5.3973401s, параллельно 1.1040982s (5 рабочих), ускорение 4.89
+--- PASS: TestParallelSpeedup (6.50s)
+    resource_test.go:85: пик счётчика 13, рост кучи 11.9 МиБ
+--- PASS: TestMemory (0.86s)
+--- PASS: TestCancel (0.05s)
+--- PASS: TestProgress (0.09s)
+ok  	cryptochat/core/message	7.824s
+--- PASS: TestAgreement (33.37s)
+ok  	cryptochat/core/dh	33.686s
+--- PASS: TestNoCipherDependency (0.95s)
+--- PASS: TestCorruptedInputs (0.02s)
+ok  	cryptochat/core/protocol	1.329s
+--- PASS: TestNoStubInReleaseBuild (0.68s)
+ok  	cryptochat/core/algorithms	0.965s
+== fuzz
+fuzz: elapsed: 30s, execs: 8478349 (0/sec), new interesting: 0 (total: 9)
+PASS
+ok  	cryptochat/core/protocol	30.593s
+== deps protocol
+cryptochat/core/protocol

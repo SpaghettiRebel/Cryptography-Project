@@ -1,0 +1,122 @@
+Fri Nov  6 12:36:50 RTZ 2026
+go version go1.23.1 windows/amd64
+
+### build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### go test -short ./...
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/cmd/chatcli	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+ok  	cryptochat/server/cmd/server	0.111s
+?   	cryptochat/server/internal/store	[no test files]
+?   	cryptochat/server/internal/store/memstore	[no test files]
+ok  	cryptochat/server/internal/accounts	4.070s
+ok  	cryptochat/server/internal/bootstrap	0.972s
+ok  	cryptochat/server/internal/contacts	0.288s
+ok  	cryptochat/server/internal/password	2.169s
+ok  	cryptochat/server/internal/postgres	1.689s
+ok  	cryptochat/server/internal/rpc	4.297s
+exit=0
+
+### go test -short -race ./...
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/cmd/chatcli	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+?   	cryptochat/server/internal/store	[no test files]
+?   	cryptochat/server/internal/store/memstore	[no test files]
+ok  	cryptochat/server/cmd/server	2.555s
+ok  	cryptochat/server/internal/accounts	6.873s
+ok  	cryptochat/server/internal/bootstrap	1.943s
+ok  	cryptochat/server/internal/contacts	1.323s
+ok  	cryptochat/server/internal/password	4.119s
+ok  	cryptochat/server/internal/postgres	2.225s
+ok  	cryptochat/server/internal/rpc	8.236s
+exit=0
+
+### postgres, CHAT_REQUIRE_POSTGRES=1
+--- PASS: TestConcurrentRegistration (5.08s)
+--- PASS: TestSessions (0.18s)
+--- PASS: TestUnavailable (0.00s)
+--- PASS: TestBadDSNDoesNotLeak (0.00s)
+--- PASS: TestContactTransitions (0.42s)
+--- PASS: TestConcurrentPairOperations (0.62s)
+--- PASS: TestConcurrentCrossRequests (0.65s)
+--- PASS: TestMapError (0.05s)
+--- PASS: TestMigrate (0.16s)
+--- PASS: TestMigrateConcurrent (0.22s)
+PASS
+ok  	cryptochat/server/internal/postgres	8.064s
+exit=0
+
+### accounts, contacts, rpc -v
+--- PASS: TestRegisterValidation (0.72s)
+--- PASS: TestLoginTakenKeepsRecord (0.56s)
+--- PASS: TestHashesDifferAndNoPlainPassword (0.27s)
+--- PASS: TestLoginErrorsAreEqual (0.53s)
+--- PASS: TestSessionLifecycle (0.36s)
+--- PASS: TestStoreFailureIsNotInvalidCredentials (0.08s)
+--- PASS: TestLoginTiming (13.62s)
+PASS
+ok  	cryptochat/server/internal/accounts	16.424s
+--- PASS: TestTransitions (0.00s)
+PASS
+ok  	cryptochat/server/internal/contacts	0.260s
+--- PASS: TestAccountsFlow (0.47s)
+--- PASS: TestLoginAnswersEqual (0.42s)
+--- PASS: TestSessionRejected (0.33s)
+--- PASS: TestRequestTooLarge (0.23s)
+--- PASS: TestPanicIsRecovered (0.43s)
+--- PASS: TestClientCancel (0.23s)
+--- PASS: TestHealthFollowsStore (0.13s)
+--- PASS: TestContactsFlow (0.69s)
+--- PASS: TestContactsRequireSession (0.13s)
+--- PASS: TestToStatusMappings (0.00s)
+--- PASS: TestUnknownErrorHidesText (0.00s)
+--- PASS: TestContextErrors (0.00s)
+--- PASS: TestStreamRequiresSession (0.28s)
+PASS
+ok  	cryptochat/server/internal/rpc	3.495s
+exit=0
+
+### e2e
+    e2e_test.go:130: SC-005: запуск до готовности 7.5435337s
+    e2e_test.go:130: SC-005: запуск до готовности 7.5435337s
+    e2e_test.go:185: SC-009: вход 133.6552ms
+    e2e_test.go:185: SC-009: вход 133.6552ms
+    e2e_test.go:196: SC-009: список контактов 6.2606ms
+    e2e_test.go:196: SC-009: список контактов 6.2606ms
+    e2e_test.go:251: SC-008: ошибка за 3.6899ms
+    e2e_test.go:251: SC-008: ошибка за 3.6899ms
+    e2e_test.go:259: SC-008: восстановление за 48.4935ms
+    e2e_test.go:259: SC-008: восстановление за 48.4935ms
+--- PASS: TestEndToEnd (79.47s)
+PASS
+ok  	cryptochat/server/test/e2e	79.563s
+--- PASS: TestEndToEnd (79.47s)
+PASS
+ok  	cryptochat/server/test/e2e	79.563s
+exit=0
+
+### quickstart: Compose и chatcli
+ Container cryptochat-postgres-1 Healthy 
+ Container cryptochat-server-1 Starting 
+ Container cryptochat-server-1 Started 
+up=0
+postgres Up 9 seconds (healthy)
+server Up 4 seconds (healthy)
+-rw-r--r-- 1 Вячеслав 197609 648 Nov  6 12:39 deploy/certs/server.crt
+зарегистрирован: alice
+вход выполнен: alice
+зарегистрирован: bob
+вход выполнен: bob
+запрос отправлен: bob
+готово: alice
+контакты: bob
+входящие: 
+исходящие: 
+ Network cryptochat_default Removed 
+down=0
+Fri Nov  6 12:39:44 RTZ 2026
