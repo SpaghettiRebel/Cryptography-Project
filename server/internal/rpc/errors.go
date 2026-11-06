@@ -17,7 +17,7 @@ import (
 // Domain — домен причин в ErrorInfo.
 const Domain = "cryptochat"
 
-// Причины ошибок API (research R7).
+// Причины ошибок API (исследование решений, R7).
 const (
 	ReasonLoginTaken         = "LOGIN_TAKEN"
 	ReasonInvalidLogin       = "INVALID_LOGIN"

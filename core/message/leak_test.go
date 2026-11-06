@@ -32,7 +32,7 @@ func TestOpenFieldsLeak(t *testing.T) {
 	}
 }
 
-// Длина шифротекста не должна раскрывать размер точнее блока, в том числе без набивки (research R7).
+// Длина шифротекста не должна раскрывать размер точнее блока, в том числе без набивки (исследование решений, R7).
 func TestLengthHiddenWithinBlock(t *testing.T) {
 	for _, mode := range modes.AllCipherModes {
 		for _, pad := range modes.AllPaddingModes {

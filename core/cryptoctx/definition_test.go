@@ -9,7 +9,7 @@ import (
 )
 
 // Шифротекст каждого режима считается здесь отдельным кодом по определению режима, без пакетов
-// cryptoctx и padding. Random Delta — по определению из research.md, раздел R10.
+// cryptoctx и padding. Random Delta — по определению из исследование решений.
 
 const defBS = 16
 

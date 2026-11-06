@@ -47,7 +47,7 @@ func (in *inner) putHeader(buf []byte, dataLen int) {
 
 // addFill дополняет buf случайными байтами до границы блока, минимум на 1 байт, и делает последний
 // байт ненулевым. Это скрывает точную длину в поточных режимах, где набивка не применяется, и не даёт
-// набивке Zeros срезать данные: она срезает только нули в конце (research R7).
+// набивке Zeros срезать данные: она срезает только нули в конце (исследование решений, R7).
 func addFill(buf []byte, r io.Reader) ([]byte, error) {
 	n := cipher.BlockSize - len(buf)%cipher.BlockSize
 	start := len(buf)
