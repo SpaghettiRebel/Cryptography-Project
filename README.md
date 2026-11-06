@@ -24,7 +24,6 @@ server/    сервер и тестовый клиент chatcli
 proto/     контракт gRPC
 deploy/    Dockerfile и compose.yaml
 docs/      задание
-specs/     спецификации, планы и задачи по фичам
 report/    пояснительная записка и результаты прогонов
 ```
 
@@ -75,5 +74,3 @@ cd server && go test -short ./...
 ```bash
 cd server && go test -tags e2e ./test/e2e -v -timeout 15m
 ```
-
-Остальные проверки описаны в `specs/003-server-accounts/quickstart.md`.
