@@ -18,7 +18,9 @@ import (
 
 	"cryptochat/server/internal/accounts"
 	"cryptochat/server/internal/bootstrap"
+	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/postgres"
 	"cryptochat/server/internal/rpc"
 )
@@ -84,7 +86,14 @@ func serve(cfg config) error {
 	if err != nil {
 		return err
 	}
-	srv := rpc.NewServer(tlsConfig, rpc.Deps{Accounts: acc, Contacts: contacts.New(db), Logger: logger, Ready: db.Ping})
+	srv := rpc.NewServer(tlsConfig, rpc.Deps{
+		Accounts:    acc,
+		Contacts:    contacts.New(db),
+		Chats:       chats.New(db),
+		KeyExchange: keyexchange.New(db),
+		Logger:      logger,
+		Ready:       db.Ping,
+	})
 
 	lis, err := net.Listen("tcp", cfg.Listen)
 	if err != nil {

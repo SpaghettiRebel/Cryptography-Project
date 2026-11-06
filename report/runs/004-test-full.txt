@@ -1,0 +1,222 @@
+Fri Nov  6 18:32:49 RTZ 2026
+go version go1.23.1 windows/amd64
+
+### core: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### server: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### integration: build/vet/gofmt
+vet=0
+build=0
+gofmt: []
+
+### core: go test -short ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.440s
+ok  	cryptochat/core/cryptoctx	0.996s
+ok  	cryptochat/core/dh	0.896s
+ok  	cryptochat/core/internal/stubcipher	0.371s
+ok  	cryptochat/core/kdf	0.376s
+ok  	cryptochat/core/message	1.783s
+ok  	cryptochat/core/modes	0.393s
+ok  	cryptochat/core/padding	0.367s
+ok  	cryptochat/core/protocol	0.533s
+short=0
+
+### core: go test -short -race ./...
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	1.306s
+ok  	cryptochat/core/cryptoctx	2.028s
+ok  	cryptochat/core/dh	2.905s
+ok  	cryptochat/core/internal/stubcipher	1.314s
+ok  	cryptochat/core/kdf	1.298s
+ok  	cryptochat/core/message	20.665s
+ok  	cryptochat/core/modes	1.297s
+ok  	cryptochat/core/padding	1.330s
+ok  	cryptochat/core/protocol	1.532s
+race=0
+
+### server: go test -short ./...
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/cmd/chatcli	[no test files]
+?   	cryptochat/server/internal/chats/chatstest	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+ok  	cryptochat/server/cmd/server	0.144s
+?   	cryptochat/server/internal/store	[no test files]
+ok  	cryptochat/server/internal/accounts	4.137s
+ok  	cryptochat/server/internal/bootstrap	1.267s
+ok  	cryptochat/server/internal/chats	0.372s
+ok  	cryptochat/server/internal/contacts	0.347s
+ok  	cryptochat/server/internal/keyexchange	0.364s
+ok  	cryptochat/server/internal/password	2.146s
+ok  	cryptochat/server/internal/postgres	1.455s
+ok  	cryptochat/server/internal/rpc	7.085s
+ok  	cryptochat/server/internal/store/memstore	0.890s
+short=0
+
+### server: go test -short -race ./...
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/cmd/chatcli	[no test files]
+?   	cryptochat/server/internal/chats/chatstest	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+?   	cryptochat/server/internal/store	[no test files]
+ok  	cryptochat/server/cmd/server	2.635s
+ok  	cryptochat/server/internal/accounts	7.468s
+ok  	cryptochat/server/internal/bootstrap	2.246s
+ok  	cryptochat/server/internal/chats	1.344s
+ok  	cryptochat/server/internal/contacts	1.331s
+ok  	cryptochat/server/internal/keyexchange	1.318s
+ok  	cryptochat/server/internal/password	4.759s
+ok  	cryptochat/server/internal/postgres	2.485s
+ok  	cryptochat/server/internal/rpc	13.227s
+ok  	cryptochat/server/internal/store/memstore	1.353s
+race=0
+
+### postgres, CHAT_REQUIRE_POSTGRES=1
+--- PASS: TestConcurrentRegistration (4.99s)
+--- PASS: TestSessions (0.25s)
+--- PASS: TestUnavailable (0.00s)
+--- PASS: TestBadDSNDoesNotLeak (0.00s)
+--- PASS: TestChatRules (0.98s)
+--- PASS: TestCreateChatRacesWithRemoveContact (0.86s)
+--- PASS: TestConcurrentClose (0.49s)
+--- PASS: TestConnectRacesWithClose (0.81s)
+--- PASS: TestConcurrentChatOperations (1.18s)
+--- PASS: TestCloseErasesValues (0.35s)
+--- PASS: TestCreateChatRollsBack (0.32s)
+--- PASS: TestChatStoreUnavailable (0.01s)
+--- PASS: TestRemoveContactRacesWithChatOperations (1.33s)
+--- PASS: TestContactTransitions (0.58s)
+--- PASS: TestConcurrentPairOperations (0.93s)
+--- PASS: TestConcurrentCrossRequests (0.84s)
+--- PASS: TestMapError (0.00s)
+--- PASS: TestMigrate (0.27s)
+--- PASS: TestMigrateConcurrent (0.35s)
+--- PASS: TestMigrateUpgrade (0.31s)
+PASS
+ok  	cryptochat/server/internal/postgres	15.534s
+postgres=0
+
+### accounts, contacts, chats, keyexchange, memstore, rpc -v
+--- PASS: TestRegisterValidation (0.76s)
+--- PASS: TestLoginTakenKeepsRecord (0.57s)
+--- PASS: TestHashesDifferAndNoPlainPassword (0.28s)
+--- PASS: TestLoginErrorsAreEqual (0.54s)
+--- PASS: TestSessionLifecycle (0.35s)
+--- PASS: TestStoreFailureIsNotInvalidCredentials (0.09s)
+--- PASS: TestLoginTiming (15.75s)
+PASS
+ok  	cryptochat/server/internal/accounts	18.743s
+--- PASS: TestTransitions (0.00s)
+PASS
+ok  	cryptochat/server/internal/contacts	0.335s
+--- PASS: TestAllValidParamsAccepted (0.00s)
+--- PASS: TestInvalidParams (0.00s)
+--- PASS: TestIDs (0.00s)
+--- PASS: TestInvalidPeerLoginIsNotContact (0.00s)
+--- PASS: TestRandomFailureIsReturned (0.00s)
+--- PASS: TestReady (0.00s)
+PASS
+ok  	cryptochat/server/internal/chats	0.413s
+--- PASS: TestPublishChecksLengthFirst (0.00s)
+--- PASS: TestValueIsCopied (0.00s)
+PASS
+ok  	cryptochat/server/internal/keyexchange	0.373s
+--- PASS: TestChatRules (0.00s)
+PASS
+ok  	cryptochat/server/internal/store/memstore	0.398s
+--- PASS: TestAccountsFlow (0.51s)
+--- PASS: TestLoginAnswersEqual (0.41s)
+--- PASS: TestSessionRejected (0.30s)
+--- PASS: TestRequestTooLarge (0.21s)
+--- PASS: TestPanicIsRecovered (0.42s)
+--- PASS: TestClientCancel (0.21s)
+--- PASS: TestHealthFollowsStore (0.12s)
+--- PASS: TestChatLifecycle (0.49s)
+--- PASS: TestCreateChatErrors (0.67s)
+--- PASS: TestChatMethodsRequireSession (0.13s)
+--- PASS: TestStrangerSeesNotFound (0.68s)
+--- PASS: TestConnectDisconnect (0.49s)
+--- PASS: TestKeyExchange (0.47s)
+--- PASS: TestRemoveContactClosesChats (0.50s)
+--- PASS: TestEnumsMatchValidation (0.49s)
+--- PASS: TestContactsFlow (0.68s)
+--- PASS: TestContactsRequireSession (0.12s)
+--- PASS: TestToStatusMappings (0.00s)
+--- PASS: TestUnknownErrorHidesText (0.00s)
+--- PASS: TestContextErrors (0.00s)
+--- PASS: TestChatErrorMapping (0.00s)
+--- PASS: TestStreamRequiresSession (0.27s)
+PASS
+ok  	cryptochat/server/internal/rpc	7.370s
+services=0
+
+### server e2e: TestEndToEnd, TestChatsEndToEnd
+    chats_test.go:174: SC-007: CreateChat 24.7979ms
+    chats_test.go:186: SC-007: ListChats 9.0245ms
+    chats_test.go:190: SC-007: GetChat 4.8211ms
+    chats_test.go:191: SC-007: ConnectChat 10.7484ms
+    chats_test.go:192: SC-007: PublishPublicValue 8.3814ms
+    chats_test.go:196: SC-007: GetPeerPublicValue 4.1284ms
+    chats_test.go:197: SC-007: DisconnectChat 9.3744ms
+    chats_test.go:198: SC-007: CloseChat 10.0414ms
+    chats_test.go:210: SC-008: ошибка за 3.6995ms
+    chats_test.go:229: SC-008: восстановление за 45.8208ms
+--- PASS: TestChatsEndToEnd (52.78s)
+    e2e_test.go:130: SC-005: запуск до готовности 8.7996672s
+    e2e_test.go:185: SC-009: вход 152.4805ms
+    e2e_test.go:196: SC-009: список контактов 6.8187ms
+    e2e_test.go:251: SC-008: ошибка за 3.0051827s
+    e2e_test.go:259: SC-008: восстановление за 45.5643ms
+--- PASS: TestEndToEnd (55.54s)
+PASS
+ok  	cryptochat/server/test/e2e	108.416s
+e2e=0
+
+### integration e2e: SC-002
+--- PASS: TestKeyAgreementThroughServer (15.67s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-128 (0.11s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-128 (0.09s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-192 (0.09s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-192 (0.09s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-256 (0.10s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-256 (0.09s)
+--- PASS: TestClientRejectsBadValues (13.86s)
+PASS
+ok  	cryptochat/integration	29.641s
+integration=0
+
+### quickstart: Compose и chatcli
+ Container cryptochat-server-1 Starting 
+ Container cryptochat-server-1 Started 
+up=0
+postgres Up 9 seconds (healthy)
+server Up 4 seconds (healthy)
+зарегистрирован: alice
+вход выполнен: alice
+зарегистрирован: bob
+вход выполнен: bob
+запрос отправлен: bob
+готово: alice
+создан чат: длина идентификатора 32
+активен собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=false собеседник_подключён=true готов=false
+активен собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=true собеседник_подключён=true готов=false
+значение опубликовано
+значение опубликовано
+значение собеседника: 512 символов
+активен собеседник=bob создатель=alice RC6/256/CBC/PKCS7 я_подключён=true собеседник_подключён=true готов=true
+закрыт собеседник=alice создатель=alice RC6/256/CBC/PKCS7 я_подключён=false собеседник_подключён=false готов=false
+ошибка: CHAT_CLOSED
+exit status 1
+подключение к закрытому: код 1
+ Network cryptochat_default Removed 
+down=0
+
+ИТОГ: failed=0
+Fri Nov  6 18:38:01 RTZ 2026

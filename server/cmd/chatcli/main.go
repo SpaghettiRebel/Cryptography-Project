@@ -24,7 +24,9 @@ import (
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout); err != nil {
 		reason := rpc.ReasonOf(err)
-		if reason != "" {
+		if field := rpc.FieldOf(err); field != "" {
+			fmt.Fprintln(os.Stderr, "ошибка:", reason, "поле:", field)
+		} else if reason != "" {
 			fmt.Fprintln(os.Stderr, "ошибка:", reason)
 		} else {
 			fmt.Fprintln(os.Stderr, "ошибка:", err)
@@ -43,7 +45,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 	rest := fs.Args()
 	if len(rest) == 0 {
-		return errors.New("нужна команда: register, login, logout, contact-request, contact-accept, contact-reject, contact-remove, contacts")
+		return errors.New("нужна команда: register, login, logout, contact-request, contact-accept, contact-reject, contact-remove, contacts, " + chatsUsage)
 	}
 	command, rest := rest[0], rest[1:]
 
@@ -158,6 +160,10 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		printList(stdout, "входящие", r.GetIncoming())
 		printList(stdout, "исходящие", r.GetOutgoing())
 		return nil
+	}
+	handled, err := runChat(conn, authed, command, rest, stdin, stdout)
+	if handled {
+		return err
 	}
 	return fmt.Errorf("неизвестная команда %q", command)
 }

@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"cryptochat/server/internal/accounts"
+	"cryptochat/server/internal/chats"
+	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/store"
 )
 
@@ -29,7 +31,20 @@ const (
 	ReasonRequestNotFound    = "REQUEST_NOT_FOUND"
 	ReasonContactNotFound    = "CONTACT_NOT_FOUND"
 	ReasonStoreUnavailable   = "STORE_UNAVAILABLE"
+	// Чаты и распределение ключа (specs/004-secret-chats/research.md, R6).
+	ReasonNotContact            = "NOT_CONTACT"
+	ReasonSelfChat              = "SELF_CHAT"
+	ReasonInvalidChatParams     = "INVALID_CHAT_PARAMS"
+	ReasonInvalidChatID         = "INVALID_CHAT_ID"
+	ReasonChatNotFound          = "CHAT_NOT_FOUND"
+	ReasonChatClosed            = "CHAT_CLOSED"
+	ReasonNotConnected          = "NOT_CONNECTED"
+	ReasonInvalidPublicValue    = "INVALID_PUBLIC_VALUE"
+	ReasonValueAlreadyPublished = "VALUE_ALREADY_PUBLISHED"
 )
+
+// fieldKey — ключ имени неверного параметра в ErrorInfo.Metadata.
+const fieldKey = "field"
 
 type mapping struct {
 	target  error
@@ -51,6 +66,14 @@ var errorMappings = []mapping{
 	{store.ErrRequestNotFound, codes.NotFound, ReasonRequestNotFound, "запрос не найден"},
 	{store.ErrContactNotFound, codes.NotFound, ReasonContactNotFound, "контакт не найден"},
 	{store.ErrUnavailable, codes.Unavailable, ReasonStoreUnavailable, "хранилище недоступно"},
+	{store.ErrNotContact, codes.FailedPrecondition, ReasonNotContact, "собеседник не найден или не контакт"},
+	{store.ErrSelfChat, codes.InvalidArgument, ReasonSelfChat, "нельзя создать чат с самим собой"},
+	{chats.ErrInvalidChatID, codes.InvalidArgument, ReasonInvalidChatID, "идентификатор чата должен занимать 16 байт"},
+	{store.ErrChatNotFound, codes.NotFound, ReasonChatNotFound, "чат не найден"},
+	{store.ErrChatClosed, codes.FailedPrecondition, ReasonChatClosed, "чат закрыт"},
+	{store.ErrNotConnected, codes.FailedPrecondition, ReasonNotConnected, "участник не подключён к чату"},
+	{keyexchange.ErrInvalidPublicValue, codes.InvalidArgument, ReasonInvalidPublicValue, "открытое значение должно занимать 256 байт"},
+	{store.ErrValueConflict, codes.AlreadyExists, ReasonValueAlreadyPublished, "опубликовано другое значение"},
 }
 
 // toStatus превращает ошибку сервиса в ответ. Текст исходной ошибки наружу не передаётся.
@@ -63,6 +86,11 @@ func toStatus(err error) error {
 	case errors.Is(err, context.DeadlineExceeded):
 		return status.Error(codes.DeadlineExceeded, "истекло время запроса")
 	}
+	var param chats.ParamError
+	if errors.As(err, &param) {
+		return withDetails(codes.InvalidArgument, "неверный параметр чата: "+param.Field,
+			&errdetails.ErrorInfo{Reason: ReasonInvalidChatParams, Domain: Domain, Metadata: map[string]string{fieldKey: param.Field}})
+	}
 	for _, m := range errorMappings {
 		if errors.Is(err, m.target) {
 			return withReason(m.code, m.reason, m.message)
@@ -72,12 +100,30 @@ func toStatus(err error) error {
 }
 
 func withReason(code codes.Code, reason, message string) error {
+	return withDetails(code, message, &errdetails.ErrorInfo{Reason: reason, Domain: Domain})
+}
+
+func withDetails(code codes.Code, message string, info *errdetails.ErrorInfo) error {
 	st := status.New(code, message)
-	detailed, err := st.WithDetails(&errdetails.ErrorInfo{Reason: reason, Domain: Domain})
+	detailed, err := st.WithDetails(info)
 	if err != nil {
 		return st.Err()
 	}
 	return detailed.Err()
+}
+
+// FieldOf возвращает имя неверного параметра из ErrorInfo или пустую строку.
+func FieldOf(err error) string {
+	st, ok := status.FromError(err)
+	if !ok {
+		return ""
+	}
+	for _, d := range st.Details() {
+		if info, ok := d.(*errdetails.ErrorInfo); ok && info.Domain == Domain {
+			return info.GetMetadata()[fieldKey]
+		}
+	}
+	return ""
 }
 
 // ReasonOf возвращает причину из ErrorInfo или пустую строку.

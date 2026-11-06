@@ -8,3 +8,4 @@ core
 proto
 *.tmp
 *.exe
+integration

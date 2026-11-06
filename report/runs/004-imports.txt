@@ -1,0 +1,21 @@
+### server: go list -deps ./... | grep cryptochat/core (ожидается пусто)
+[конец]
+### server: прямые импорты crypto/* и x/crypto, включая тесты
+      1 crypto/ecdsa
+      1 crypto/elliptic
+      7 crypto/rand
+      3 crypto/sha256
+      1 crypto/subtle
+      3 crypto/tls
+      2 crypto/x509
+      1 crypto/x509/pkix
+      1 golang.org/x/crypto/argon2
+### integration: импорты проекта и crypto/* (ожидаются core, server/api/v1, crypto/tls, crypto/x509)
+crypto/tls
+crypto/x509
+cryptochat/core/cipher
+cryptochat/core/dh
+cryptochat/core/kdf
+cryptochat/server/api/v1
+### core: новые импорты сети и хранилища (ожидается пусто)
+[конец]

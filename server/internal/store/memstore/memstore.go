@@ -18,7 +18,7 @@ type session struct {
 
 type pair struct{ a, b string }
 
-// Store реализует store.AccountStore и store.ContactStore.
+// Store реализует store.AccountStore, store.ContactStore и store.ChatStore.
 type Store struct {
 	mu       sync.Mutex
 	nextID   int
@@ -27,6 +27,8 @@ type Store struct {
 	sessions map[string]session
 	requests map[pair]bool // отправитель, получатель
 	contacts map[pair]bool // упорядоченная пара
+	chats    map[[16]byte]*chatRow
+	chatSeq  int
 }
 
 // New создаёт пустое хранилище.
@@ -37,6 +39,7 @@ func New() *Store {
 		sessions: map[string]session{},
 		requests: map[pair]bool{},
 		contacts: map[pair]bool{},
+		chats:    map[[16]byte]*chatRow{},
 	}
 }
 
@@ -183,6 +186,7 @@ func (m *Store) RemoveContact(_ context.Context, userID, otherNorm string) error
 		return store.ErrContactNotFound
 	}
 	delete(m.contacts, ordered(userID, o.ID))
+	m.closePairChats(userID, o.ID)
 	return nil
 }
 

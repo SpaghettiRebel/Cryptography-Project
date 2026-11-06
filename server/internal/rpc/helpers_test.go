@@ -17,7 +17,9 @@ import (
 	apiv1 "cryptochat/server/api/v1"
 	"cryptochat/server/internal/accounts"
 	"cryptochat/server/internal/bootstrap"
+	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/keyexchange"
 	"cryptochat/server/internal/store/memstore"
 )
 
@@ -44,6 +46,8 @@ func (s *syncBuffer) String() string {
 type harness struct {
 	accounts apiv1.AccountsClient
 	contacts apiv1.ContactsClient
+	chats    apiv1.ChatsClient
+	keys     apiv1.KeyExchangeClient
 	conn     *grpc.ClientConn
 	log      *syncBuffer
 	server   *Server
@@ -72,10 +76,12 @@ func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)
 	}
 	log := &syncBuffer{}
 	deps := Deps{
-		Accounts: acc,
-		Contacts: contacts.New(m),
-		Logger:   slog.New(slog.NewTextHandler(log, nil)),
-		Ready:    ready,
+		Accounts:    acc,
+		Contacts:    contacts.New(m),
+		Chats:       chats.New(m),
+		KeyExchange: keyexchange.New(m),
+		Logger:      slog.New(slog.NewTextHandler(log, nil)),
+		Ready:       ready,
 	}
 	for _, fn := range extra {
 		fn(&deps)
@@ -93,7 +99,7 @@ func start(t *testing.T, ready func(context.Context) error, extra ...func(*Deps)
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close() })
-	return &harness{accounts: apiv1.NewAccountsClient(conn), contacts: apiv1.NewContactsClient(conn), conn: conn, log: log, server: s, store: m}
+	return &harness{accounts: apiv1.NewAccountsClient(conn), contacts: apiv1.NewContactsClient(conn), chats: apiv1.NewChatsClient(conn), keys: apiv1.NewKeyExchangeClient(conn), conn: conn, log: log, server: s, store: m}
 }
 
 func auth(token string) context.Context {

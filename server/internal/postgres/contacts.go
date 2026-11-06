@@ -32,7 +32,7 @@ func (d *DB) inPairTx(parent context.Context, userID, otherNorm string, missing 
 	if otherID == userID {
 		return fn(ctx, tx, otherID)
 	}
-	rows, err := tx.Query(ctx, `SELECT id FROM users WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`, []string{userID, otherID})
+	rows, err := tx.Query(ctx, `SELECT id FROM users WHERE id = ANY($1::uuid[]) ORDER BY id FOR NO KEY UPDATE`, []string{userID, otherID})
 	if err != nil {
 		return mapError(parent, err)
 	}
@@ -43,7 +43,8 @@ func (d *DB) inPairTx(parent context.Context, userID, otherNorm string, missing 
 	if err := fn(ctx, tx, otherID); err != nil {
 		if errors.Is(err, store.ErrSelfRequest) || errors.Is(err, store.ErrAlreadyContact) ||
 			errors.Is(err, store.ErrDuplicateRequest) || errors.Is(err, store.ErrRequestNotFound) ||
-			errors.Is(err, store.ErrContactNotFound) {
+			errors.Is(err, store.ErrContactNotFound) || errors.Is(err, store.ErrSelfChat) ||
+			errors.Is(err, store.ErrNotContact) {
 			return err
 		}
 		return mapError(parent, err)
@@ -122,7 +123,7 @@ func (d *DB) RejectRequest(ctx context.Context, recipientID, senderNorm string) 
 	})
 }
 
-// RemoveContact удаляет контакт у обоих.
+// RemoveContact удаляет контакт у обоих и в той же транзакции закрывает чаты пары.
 func (d *DB) RemoveContact(ctx context.Context, userID, otherNorm string) error {
 	return d.inPairTx(ctx, userID, otherNorm, store.ErrContactNotFound, func(ctx context.Context, tx pgx.Tx, otherID string) error {
 		tag, err := tx.Exec(ctx, `DELETE FROM contacts WHERE user_low = LEAST($1::uuid, $2::uuid) AND user_high = GREATEST($1::uuid, $2::uuid)`, userID, otherID)
@@ -132,7 +133,7 @@ func (d *DB) RemoveContact(ctx context.Context, userID, otherNorm string) error 
 		if tag.RowsAffected() == 0 {
 			return store.ErrContactNotFound
 		}
-		return nil
+		return closePairChats(ctx, tx, userID, otherID)
 	})
 }
 

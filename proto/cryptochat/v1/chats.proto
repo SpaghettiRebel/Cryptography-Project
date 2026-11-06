@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package cryptochat.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "cryptochat/server/api/v1;apiv1";
+
+// Ошибки возвращаются кодом gRPC и google.rpc.ErrorInfo, домен "cryptochat".
+// Причины перечислены в research.md, раздел R6. Все методы требуют сессию в метаданных
+// authorization: Bearer <token>; без неё UNAUTHENTICATED/UNAUTHENTICATED.
+// chat_id всегда 16 байт, иначе INVALID_ARGUMENT/INVALID_CHAT_ID. Для пользователя, который не
+// участвует в чате, и для несуществующего чата ответ один: NOT_FOUND/CHAT_NOT_FOUND.
+
+service Chats {
+  // FAILED_PRECONDITION/NOT_CONTACT, INVALID_ARGUMENT/SELF_CHAT,
+  // INVALID_ARGUMENT/INVALID_CHAT_PARAMS, в metadata поле field: algorithm, key_bits,
+  // cipher_mode или padding_mode.
+  rpc CreateChat(CreateChatRequest) returns (ChatResponse);
+  // Только активные чаты пользователя, новые первыми.
+  rpc ListChats(ListChatsRequest) returns (ListChatsResponse);
+  // Любой свой чат, в том числе закрытый.
+  rpc GetChat(ChatRef) returns (ChatResponse);
+  // FAILED_PRECONDITION/CHAT_CLOSED. Повтор успешен.
+  rpc ConnectChat(ChatRef) returns (ChatResponse);
+  // Для закрытого чата успех без изменений. Повтор успешен.
+  rpc DisconnectChat(ChatRef) returns (ChatResponse);
+  // Окончательно закрывает чат для обоих и удаляет открытые значения. Повтор успешен.
+  rpc CloseChat(ChatRef) returns (ChatResponse);
+}
+
+// Сервер только хранит и передаёт открытые значения. Общего секрета и ключа в API нет.
+service KeyExchange {
+  // INVALID_ARGUMENT/INVALID_PUBLIC_VALUE, FAILED_PRECONDITION/CHAT_CLOSED,
+  // FAILED_PRECONDITION/NOT_CONNECTED, ALREADY_EXISTS/VALUE_ALREADY_PUBLISHED.
+  // Повтор того же значения успешен.
+  rpc PublishPublicValue(PublishPublicValueRequest) returns (PublishPublicValueResponse);
+  // FAILED_PRECONDITION/CHAT_CLOSED. Отсутствие значения не ошибка: published = false.
+  rpc GetPeerPublicValue(ChatRef) returns (GetPeerPublicValueResponse);
+}
+
+enum Algorithm {
+  ALGORITHM_UNSPECIFIED = 0;
+  ALGORITHM_MAGENTA = 1;
+  ALGORITHM_RC6 = 2;
+}
+
+enum CipherMode {
+  CIPHER_MODE_UNSPECIFIED = 0;
+  CIPHER_MODE_ECB = 1;
+  CIPHER_MODE_CBC = 2;
+  CIPHER_MODE_PCBC = 3;
+  CIPHER_MODE_CFB = 4;
+  CIPHER_MODE_OFB = 5;
+  CIPHER_MODE_CTR = 6;
+  CIPHER_MODE_RANDOM_DELTA = 7;
+}
+
+enum PaddingMode {
+  PADDING_MODE_UNSPECIFIED = 0;
+  PADDING_MODE_ZEROS = 1;
+  PADDING_MODE_ANSI_X923 = 2;
+  PADDING_MODE_PKCS7 = 3;
+  PADDING_MODE_ISO_10126 = 4;
+}
+
+message ChatParams {
+  Algorithm algorithm = 1;
+  // 128, 192 или 256.
+  uint32 key_bits = 2;
+  CipherMode cipher_mode = 3;
+  PaddingMode padding_mode = 4;
+}
+
+message ChatParticipant {
+  string login = 1;
+  bool connected = 2;
+  bool public_value_published = 3;
+}
+
+message Chat {
+  bytes chat_id = 1;
+  ChatParams params = 2;
+  // Логин создателя.
+  string creator = 3;
+  ChatParticipant self = 4;
+  ChatParticipant peer = 5;
+  // true, когда опубликованы оба значения и чат активен.
+  bool ready = 6;
+  google.protobuf.Timestamp created_at = 7;
+  // Не задано, пока чат активен.
+  google.protobuf.Timestamp closed_at = 8;
+}
+
+message CreateChatRequest {
+  string peer_login = 1;
+  ChatParams params = 2;
+}
+
+message ChatRef {
+  bytes chat_id = 1;
+}
+
+message ChatResponse {
+  Chat chat = 1;
+}
+
+message ListChatsRequest {}
+
+message ListChatsResponse {
+  repeated Chat chats = 1;
+}
+
+message PublishPublicValueRequest {
+  bytes chat_id = 1;
+  // Беззнаковое число big-endian, ровно 256 байт, с ведущими нулями.
+  bytes public_value = 2;
+}
+
+message PublishPublicValueResponse {}
+
+message GetPeerPublicValueResponse {
+  bool published = 1;
+  bytes public_value = 2;
+}

@@ -9,7 +9,8 @@
 | Криптоядро `core`: режимы, набивки, Диффи–Хеллман, вывод ключа, формат сообщений | готово |
 | Сервер `server`: регистрация и вход, контакты, gRPC с TLS 1.3, Postgres, Docker Compose | готово |
 | Шифры MAGENTA и RC6 | не реализованы, ждём документацию к алгоритмам |
-| Чаты и доставка через RabbitMQ | не начато |
+| Секретные чаты на сервере: создание, закрытие, подключение, обмен открытыми значениями | готово |
+| Передача сообщений через RabbitMQ | не начато |
 | Клиент на Wails (React, TypeScript, Go) с SQLite | не начато |
 
 ## Стек
@@ -22,6 +23,7 @@ Go 1.22, gRPC и Protobuf, Postgres, Docker Compose. По плану добав�
 core/      криптоядро
 server/    сервер и тестовый клиент chatcli
 proto/     контракт gRPC
+integration/ тесты совместной работы криптоядра и сервера
 deploy/    Dockerfile и compose.yaml
 docs/      задание
 report/    пояснительная записка и результаты прогонов
@@ -69,8 +71,12 @@ cd core && go test ./...
 cd server && go test -short ./...
 ```
 
-Сквозной тест сервера поднимает отдельный проект Compose, Docker должен быть запущен:
+Сквозные тесты поднимают отдельные проекты Compose, Docker должен быть запущен:
 
 ```bash
 cd server && go test -tags e2e ./test/e2e -v -timeout 15m
+```
+
+```bash
+cd integration && go test -tags e2e ./... -v -timeout 15m
 ```

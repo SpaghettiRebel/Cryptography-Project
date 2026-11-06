@@ -18,7 +18,9 @@ import (
 
 	apiv1 "cryptochat/server/api/v1"
 	"cryptochat/server/internal/accounts"
+	"cryptochat/server/internal/chats"
 	"cryptochat/server/internal/contacts"
+	"cryptochat/server/internal/keyexchange"
 )
 
 // MaxMessageSize ограничивает размер запроса.
@@ -26,9 +28,11 @@ const MaxMessageSize = 64 * 1024
 
 // Deps — зависимости gRPC-слоя.
 type Deps struct {
-	Accounts *accounts.Service
-	Contacts *contacts.Service
-	Logger   *slog.Logger
+	Accounts    *accounts.Service
+	Contacts    *contacts.Service
+	Chats       *chats.Service
+	KeyExchange *keyexchange.Service
+	Logger      *slog.Logger
 	// Ready проверяет готовность хранилища.
 	Ready func(context.Context) error
 }
@@ -66,6 +70,8 @@ func NewServer(tlsConfig *tls.Config, deps Deps) *Server {
 	healthpb.RegisterHealthServer(s.GRPC, s.health)
 	apiv1.RegisterAccountsServer(s.GRPC, &accountsHandler{svc: deps.Accounts})
 	apiv1.RegisterContactsServer(s.GRPC, &contactsHandler{svc: deps.Contacts})
+	apiv1.RegisterChatsServer(s.GRPC, &chatsHandler{svc: deps.Chats})
+	apiv1.RegisterKeyExchangeServer(s.GRPC, &keyExchangeHandler{svc: deps.KeyExchange})
 	return s
 }
 
