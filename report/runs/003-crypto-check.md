@@ -1,6 +1,6 @@
 # Проверка криптографии: 003-server-accounts (T035)
 
-Проверял агент `crypto-checker`: чтение кода и `go test -short` пакетов `password`, `accounts`, `bootstrap`, `rpc`. Работа в контейнере, Postgres и `-race` проверены отдельно, см. `003-test-full.txt`.
+Способ проверки: чтение кода и `go test -short` пакетов `password`, `accounts`, `bootstrap`, `rpc`. Работа в контейнере, Postgres и `-race` проверены отдельно, см. `003-test-full.txt`.
 
 | Проверка | Результат | Доказательство |
 |---|---|---|

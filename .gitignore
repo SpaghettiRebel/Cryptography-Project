@@ -13,8 +13,3 @@ bin/
 # Сертификаты и файлы сессий
 deploy/certs/
 *.tmp
-
-# Инструменты разработки и артефакты Spec Kit
-.claude/
-.specify/
-specs/

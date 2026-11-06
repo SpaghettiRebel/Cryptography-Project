@@ -1,11 +1,5 @@
-.claude
-.specify
-specs
-report
-docs
-deploy/certs
-core
-proto
-*.tmp
-*.exe
-integration
+# В контекст сборки образа сервера попадает только код сервера.
+*
+!server/
+**/*.tmp
+**/*.exe

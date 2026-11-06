@@ -1,6 +1,6 @@
 # Проверка криптографии: 004-secret-chats (T033)
 
-Проверял агент `crypto-checker` чтением кода и быстрыми тестами `chats`, `keyexchange`, `memstore`. Postgres, gRPC, `core/dh`, сквозной тест и `integration` запущены отдельно, см. `004-test-full.txt`.
+Способ проверки: чтение кода и быстрыми тестами `chats`, `keyexchange`, `memstore`. Postgres, gRPC, `core/dh`, сквозной тест и `integration` запущены отдельно, см. `004-test-full.txt`.
 
 | Проверка | Результат | Доказательство |
 |---|---|---|

@@ -31,7 +31,7 @@ const (
 	ReasonRequestNotFound    = "REQUEST_NOT_FOUND"
 	ReasonContactNotFound    = "CONTACT_NOT_FOUND"
 	ReasonStoreUnavailable   = "STORE_UNAVAILABLE"
-	// Чаты и распределение ключа (specs/004-secret-chats/research.md, R6).
+	// Чаты и распределение ключа.
 	ReasonNotContact            = "NOT_CONTACT"
 	ReasonSelfChat              = "SELF_CHAT"
 	ReasonInvalidChatParams     = "INVALID_CHAT_PARAMS"
