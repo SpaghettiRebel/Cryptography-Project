@@ -11,17 +11,19 @@
 | Шифры MAGENTA и RC6 | не реализованы, ждём документацию к алгоритмам |
 | Секретные чаты на сервере: создание, закрытие, подключение, обмен открытыми значениями | готово |
 | Передача шифротекста через RabbitMQ: отправка, поток получения, подтверждения, удаление очередей | готово |
-| Клиент на Wails (React, TypeScript, Go) с SQLite | не начато |
+| Клиент на Wails (React, TypeScript, Go) с SQLite: вход, контакты, секретные чаты, согласование ключа | готова основа |
+| Клиент: ввод, шифрование и передача сообщений и файлов | в работе |
 
 ## Стек
 
-Go 1.22, gRPC и Protobuf, Postgres, RabbitMQ, Docker Compose. По плану добавится клиент на Wails. Архитектура: модульный монолит.
+Go 1.22, gRPC и Protobuf, Postgres, RabbitMQ, Docker Compose. Клиент: Wails v2.9.2, React 18 и TypeScript, локальная база SQLite без cgo (`modernc.org/sqlite`). Архитектура: модульный монолит.
 
 ## Структура
 
 ```text
 core/      криптоядро
 server/    сервер и тестовый клиент chatcli
+client/    оконный клиент на Wails: Go в internal/, интерфейс в frontend/
 proto/     контракт gRPC
 integration/ тесты совместной работы криптоядра и сервера
 deploy/    Dockerfile и compose.yaml
@@ -68,6 +70,33 @@ go run ./server/cmd/chatcli -session bob.tmp recv "$ID" 1
 ```bash
 docker compose -f deploy/compose.yaml down -v
 ```
+
+## Клиент
+
+Нужны Go, Docker и Wails CLI v2.9.2. Node не нужен: интерфейс собирается и тестируется в контейнере `node:22-alpine`, зависимости лежат в томе Docker `cryptochat-client-node-modules`.
+
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.2
+```
+
+Сборка приложения (`client/build/bin/cryptochat.exe`); вариант с тегом `devcipher` подставляет тестовый шифр вместо отсутствующих MAGENTA и RC6 и только для разработки:
+
+```bash
+sh client/scripts/build.sh
+```
+
+```bash
+sh client/scripts/build.sh -tags devcipher
+```
+
+При первом запуске в настройках сервера указываются адрес `localhost:8443` и файл сертификата `deploy/certs/server.crt` (если приложение запущено из корня репозитория, путь подставляется сам). Данные клиента лежат в `%AppData%\cryptochat`; папку можно задать переменной `CRYPTOCHAT_HOME`, например чтобы запустить двух пользователей на одной машине:
+
+```bash
+CRYPTOCHAT_HOME="$(pwd -W)/out/alice" client/build/bin/cryptochat.exe &
+CRYPTOCHAT_HOME="$(pwd -W)/out/bob" client/build/bin/cryptochat.exe &
+```
+
+Ограничение: сеансовые ключи и секретные значения Диффи–Хеллмана хранятся в локальной базе профиля без отдельной защиты, их защищают только права доступа к папке пользователя.
 
 ## Тесты
 
@@ -116,4 +145,30 @@ cd integration && go test -tags e2e,devcipher ./... -v -timeout 20m
 
 ```bash
 cd integration && go test -tags e2e ./... -v -timeout 20m
+```
+
+Клиент: быстрые тесты в сдаваемой сборке и со сборкой `devcipher`:
+
+```bash
+cd client && go test -short ./...
+```
+
+```bash
+cd client && go test -short -tags devcipher ./...
+```
+
+Сквозные тесты клиента поднимают проект Compose `cryptochat-client-e2e` на порту 18445:
+
+```bash
+cd client && go test -tags e2e ./internal/e2e -v -timeout 20m
+```
+
+```bash
+cd client && go test -tags e2e,devcipher ./internal/e2e -v -timeout 20m
+```
+
+Сборка и тесты интерфейса в контейнере:
+
+```bash
+sh client/scripts/frontend.sh
 ```

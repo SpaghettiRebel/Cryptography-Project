@@ -1,0 +1,306 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1d2330;
+  --muted: #5d6576;
+  --line: #d7dbe3;
+  --accent: #2a5bd7;
+  --danger: #b3261e;
+  --warn-bg: #fff4d6;
+  --err-bg: #fde7e6;
+  --ok: #1d7a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+h1 {
+  font-size: 22px;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 17px;
+  margin: 0 0 12px;
+}
+
+.screen {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.screen.login,
+.screen.settings {
+  max-width: 460px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-weight: normal;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--danger);
+  outline: 1px solid var(--danger);
+}
+
+small {
+  color: var(--muted);
+}
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 0 4px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row input {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tabs [role="tab"][aria-selected="true"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.error {
+  color: var(--danger);
+  margin: 4px 0;
+}
+
+.info {
+  color: var(--ok);
+  margin: 4px 0;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.warning {
+  background: var(--warn-bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.banner-error {
+  background: var(--err-bg);
+}
+
+.banner-warning {
+  background: var(--warn-bg);
+}
+
+.banner-info {
+  background: #e7efff;
+}
+
+.recent,
+.server {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.statusbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 0 16px;
+}
+
+.statusbar .who {
+  font-weight: 600;
+  flex: 1;
+}
+
+.connection-online {
+  color: var(--ok);
+}
+
+.connection-offline {
+  color: var(--danger);
+}
+
+.connection-connecting {
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list li {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.list li .grow {
+  flex: 1;
+}
+
+.chat-meta {
+  color: var(--muted);
+}
+
+.key-READY {
+  color: var(--ok);
+}
+
+.key-KEY_LOST,
+.key-PEER_VALUE_INVALID {
+  color: var(--danger);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 33, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  background: var(--card);
+  border-radius: 8px;
+  padding: 20px;
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notices {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 340px;
+}
+
+.notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #e7efff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.notice-warning {
+  background: var(--warn-bg);
+}
+
+.notice-error {
+  background: var(--err-bg);
+}

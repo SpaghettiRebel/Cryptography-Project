@@ -1,0 +1,71 @@
+Способ проверки: go list и grep по исходникам модулей client, core, server, integration и файлам фронтенда; git ls-files.
+### client: тестовый шифр только с тегом devcipher
+client-no-stub=0
+[без тега: конец]
+cryptochat/core/internal/stubcipher
+client-stub-with-tag=0
+### client: запрещённые прямые импорты, включая тесты, все теги (ожидается пусто)
+client-forbidden[]=0
+client-forbidden[devcipher]=0
+client-forbidden[e2e]=0
+client-forbidden[e2e,devcipher]=0
+client-grep-forbidden=0
+[конец]
+### client: прямые импорты crypto/* и пакетов core, включая тесты
+      3 crypto/ecdsa
+      3 crypto/elliptic
+      5 crypto/rand
+      2 crypto/sha256
+      3 crypto/tls
+      5 crypto/x509
+      3 crypto/x509/pkix
+      2 cryptochat/core/algorithms
+     10 cryptochat/core/cipher
+      2 cryptochat/core/dh
+      2 cryptochat/core/kdf
+### server: go list -deps ./... | grep cryptochat/core (ожидается пусто)
+server-no-core=0
+[конец]
+server-e2e-no-core-client=0
+[конец]
+### integration: клиентский пакет не используется
+integration-no-client=0
+[конец]
+### фронтенд: нет криптобиблиотек и криптографии (ожидается пусто)
+frontend-no-crypto-libs=0
+[конец]
+frontend-no-webcrypto=0
+[конец]
+### директива go во всех модулях и go.work, без toolchain
+core/go.mod: go 1.22
+core/go.mod-go122=0
+core/go.mod-no-toolchain=0
+server/go.mod: go 1.22
+server/go.mod-go122=0
+server/go.mod-no-toolchain=0
+integration/go.mod: go 1.22
+integration/go.mod-go122=0
+integration/go.mod-no-toolchain=0
+client/go.mod: go 1.22
+client/go.mod-go122=0
+client/go.mod-no-toolchain=0
+go.work: go 1.22
+go.work-go122=0
+go.work-no-toolchain=0
+### версии зависимостей клиента
+github.com/wailsapp/wails/v2 v2.9.2
+modernc.org/sqlite v1.34.5
+google.golang.org/grpc v1.67.3
+google.golang.org/protobuf v1.34.2
+### версии x/* рабочего пространства
+golang.org/x/net v0.28.0
+golang.org/x/sys v0.28.0
+golang.org/x/crypto v0.31.0
+golang.org/x/text v0.21.0
+### состав репозитория клиента: нет node_modules, dist кроме .gitkeep, build/bin, exe, баз
+client-tree-clean=0
+[конец]
+файлов клиента для git: 100
+ignore-rules=0
+
+ИТОГ: failed=0

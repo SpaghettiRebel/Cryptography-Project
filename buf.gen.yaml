@@ -8,3 +8,17 @@ plugins:
   - remote: buf.build/grpc/go:v1.5.1
     out: server
     opt: module=cryptochat/server
+  - remote: buf.build/protocolbuffers/go:v1.34.2
+    out: client
+    opt:
+      - module=cryptochat/client
+      - Mcryptochat/v1/accounts.proto=cryptochat/client/internal/api/v1;apiv1
+      - Mcryptochat/v1/chats.proto=cryptochat/client/internal/api/v1;apiv1
+      - Mcryptochat/v1/delivery.proto=cryptochat/client/internal/api/v1;apiv1
+  - remote: buf.build/grpc/go:v1.5.1
+    out: client
+    opt:
+      - module=cryptochat/client
+      - Mcryptochat/v1/accounts.proto=cryptochat/client/internal/api/v1;apiv1
+      - Mcryptochat/v1/chats.proto=cryptochat/client/internal/api/v1;apiv1
+      - Mcryptochat/v1/delivery.proto=cryptochat/client/internal/api/v1;apiv1

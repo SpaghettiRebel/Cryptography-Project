@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-// ErrInvalidPublicValue — открытое значение вне диапазона [2, p − 2].
+// ErrInvalidPublicValue — открытое значение вне диапазона [2, p − 2] или вне подгруппы порядка q.
 var ErrInvalidPublicValue = errors.New("dh: недопустимое открытое значение")
 
 // SharedSecretSize — размер общего секрета в байтах: длина p.
@@ -27,7 +27,7 @@ const group14Prime = "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" +
 
 // Group — параметры группы. Значения неизменяемы снаружи.
 type Group struct {
-	p, g *big.Int
+	p, g, q *big.Int
 }
 
 // Group14 возвращает новую копию параметров группы 14.
@@ -36,7 +36,9 @@ func Group14() *Group {
 	if !ok {
 		panic("dh: некорректная константа группы")
 	}
-	return &Group{p: p, g: big.NewInt(2)}
+	// p — безопасное простое: q = (p − 1)/2 тоже простое, и g = 2 порождает подгруппу порядка q.
+	q := new(big.Int).Rsh(p, 1)
+	return &Group{p: p, g: big.NewInt(2), q: q}
 }
 
 // P возвращает копию простого модуля.
@@ -45,12 +47,23 @@ func (g *Group) P() *big.Int { return new(big.Int).Set(g.p) }
 // G возвращает копию генератора.
 func (g *Group) G() *big.Int { return new(big.Int).Set(g.g) }
 
-// ValidatePublic допускает только значения 2 ≤ y ≤ p − 2.
-func (g *Group) ValidatePublic(y *big.Int) error {
+// inRange сообщает, что 2 ≤ y ≤ p − 2.
+func (g *Group) inRange(y *big.Int) bool {
 	if y == nil || y.Cmp(big.NewInt(2)) < 0 {
+		return false
+	}
+	return y.Cmp(new(big.Int).Sub(g.p, big.NewInt(2))) <= 0
+}
+
+// ValidatePublic допускает только значения 2 ≤ y ≤ p − 2, лежащие в подгруппе простого порядка q,
+// которую порождает g: y^q mod p = 1. Значение вне подгруппы (например, p − 2 порядка 2q или любой
+// квадратичный невычет) раскрывало бы чётность секрета собеседника.
+func (g *Group) ValidatePublic(y *big.Int) error {
+	if !g.inRange(y) {
 		return ErrInvalidPublicValue
 	}
-	if y.Cmp(new(big.Int).Sub(g.p, big.NewInt(2))) > 0 {
+	r, err := ModPow(y, g.q, g.p)
+	if err != nil || r.Cmp(one) != 0 {
 		return ErrInvalidPublicValue
 	}
 	return nil

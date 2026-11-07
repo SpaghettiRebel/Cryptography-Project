@@ -51,3 +51,24 @@ func (k KeyPair) String() string { return "dh.KeyPair{секрет скрыт}" 
 // Format закрывает все глаголы fmt, включая %#v и %d. Приёмник — значение, чтобы копия KeyPair и
 // структура с полем этого типа тоже не выводили секрет.
 func (k KeyPair) Format(f fmt.State, _ rune) { _, _ = io.WriteString(f, k.String()) }
+
+// PrivateBytes возвращает копию секретного значения: ровно 256 байт, big-endian, с ведущими нулями.
+// Нужен клиенту, чтобы сохранить значение до публикации и продолжить согласование после перезапуска.
+func (k *KeyPair) PrivateBytes() []byte { return k.x.FillBytes(make([]byte, PublicValueSize)) }
+
+// KeyPairFromPrivate восстанавливает пару по сохранённому секретному значению. Значение должно
+// занимать ровно 256 байт и лежать в [2, p − 2]; открытое значение вычисляется заново.
+func (g *Group) KeyPairFromPrivate(raw []byte) (*KeyPair, error) {
+	if len(raw) != PublicValueSize {
+		return nil, ErrInvalidPublicValue
+	}
+	x := new(big.Int).SetBytes(raw)
+	if !g.inRange(x) {
+		return nil, ErrInvalidPublicValue
+	}
+	y, err := ModPow(g.g, x, g.p)
+	if err != nil {
+		return nil, err
+	}
+	return &KeyPair{group: g, x: x, y: y}, nil
+}

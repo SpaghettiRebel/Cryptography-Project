@@ -42,6 +42,7 @@ func TestParsePublicRejects(t *testing.T) {
 		"1":        encode(big.NewInt(1)),
 		"p-1":      encode(new(big.Int).Sub(p, big.NewInt(1))),
 		"p":        encode(p),
+		"p-2":      encode(new(big.Int).Sub(p, big.NewInt(2))),
 		"все 0xFF": bytes.Repeat([]byte{0xFF}, PublicValueSize),
 	}
 	for name, raw := range cases {
@@ -84,7 +85,12 @@ func TestSharedSecretThroughBytes(t *testing.T) {
 
 func TestParsePublicAcceptsBounds(t *testing.T) {
 	g := Group14()
-	for _, v := range []*big.Int{big.NewInt(2), new(big.Int).Sub(g.P(), big.NewInt(2))} {
+	// Наибольшее допустимое значение — наибольший квадратичный вычет не больше p − 2.
+	top := new(big.Int).Sub(g.P(), big.NewInt(2))
+	for big.Jacobi(top, g.P()) != 1 {
+		top.Sub(top, big.NewInt(1))
+	}
+	for _, v := range []*big.Int{big.NewInt(2), top} {
 		got, err := g.ParsePublic(v.FillBytes(make([]byte, PublicValueSize)))
 		if err != nil || got.Cmp(v) != 0 {
 			t.Errorf("граница %v: %v", v, err)
