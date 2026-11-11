@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -21,6 +22,8 @@ import (
 	"cryptochat/client/internal/rpcclient"
 	"cryptochat/client/internal/service"
 	"cryptochat/core/cipher"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Каждый экспортируемый метод App первым оператором ставит defer a.guard(&err), а последним
@@ -70,8 +73,8 @@ func TestEveryMethodGuarded(t *testing.T) {
 			t.Errorf("%s: guard получает не &err", fn.Name.Name)
 		}
 	}
-	if count != 18 {
-		t.Fatalf("методов App: %d, по контракту 18", count)
+	if count != 28 {
+		t.Fatalf("методов App: %d, по контракту 28", count)
 	}
 }
 
@@ -320,4 +323,31 @@ func (l *syncLog) String() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.b.String()
+}
+
+// Сбой диалога выбора или сохранения файла приходит в интерфейс ошибкой с кодом, а закрытый диалог —
+// пустым результатом без ошибки.
+func TestDialogErrors(t *testing.T) {
+	a := testApp(t)
+	a.ctxMu.Lock()
+	a.ctx = context.Background()
+	a.ctxMu.Unlock()
+	open, save := openFileDialog, saveFileDialog
+	t.Cleanup(func() { openFileDialog, saveFileDialog = open, save })
+	openFileDialog = func(context.Context, runtime.OpenDialogOptions) (string, error) {
+		return "", errors.New("диалог не открылся")
+	}
+	if m, err := a.SendFile("00"); m != nil || codeOf(t, err) != apperr.FileRead {
+		t.Fatalf("сбой диалога выбора: %v %v", m, err)
+	}
+	openFileDialog = func(context.Context, runtime.OpenDialogOptions) (string, error) { return "", nil }
+	if m, err := a.SendFile("00"); m != nil || err != nil {
+		t.Fatalf("закрытый диалог выбора: %v %v", m, err)
+	}
+	if p, err := a.dialogResult("", errors.New("x"), apperr.FileWrite); p != "" || apperr.CodeOf(err) != apperr.FileWrite {
+		t.Fatalf("сбой диалога сохранения: %q %v", p, err)
+	}
+	if p, err := a.dialogResult("", nil, apperr.FileWrite); p != "" || err != nil {
+		t.Fatalf("закрытый диалог сохранения: %q %v", p, err)
+	}
 }

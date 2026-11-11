@@ -59,10 +59,14 @@ func TestFromStatusTable(t *testing.T) {
 		{codes.Unavailable, "SERVER_STOPPING", nil, ServerBusy, ""},
 		{codes.Unavailable, "", nil, ServerUnavailable, ""},
 		{codes.DeadlineExceeded, "", nil, Timeout, ""},
-		{codes.ResourceExhausted, "QUEUE_FULL", nil, ServerBusy, ""},
-		{codes.FailedPrecondition, "CHAT_NOT_READY", nil, ServerBusy, ""},
-		{codes.Aborted, "STREAM_REPLACED", nil, ServerBusy, ""},
-		{codes.DeadlineExceeded, "ACK_TIMEOUT", nil, ServerBusy, ""},
+		{codes.ResourceExhausted, "QUEUE_FULL", nil, QueueFull, ""},
+		{codes.FailedPrecondition, "CHAT_NOT_READY", nil, ChatNotReady, ""},
+		{codes.Aborted, "STREAM_REPLACED", nil, StreamReplaced, ""},
+		{codes.DeadlineExceeded, "ACK_TIMEOUT", nil, AckTimeout, ""},
+		{codes.InvalidArgument, "INVALID_FRAGMENT", nil, Internal, ""},
+		{codes.InvalidArgument, "FRAGMENT_TOO_LARGE", nil, Internal, ""},
+		{codes.ResourceExhausted, "", nil, Internal, ""},
+		{codes.InvalidArgument, "INVALID_STREAM_REQUEST", nil, Internal, ""},
 		{codes.Internal, "", nil, Internal, ""},
 		{codes.Unknown, "СТРАННАЯ_ПРИЧИНА", nil, Internal, ""},
 		{codes.NotFound, "", nil, Internal, ""},
@@ -137,5 +141,55 @@ func TestEveryCodeHasMessage(t *testing.T) {
 	p := Profile(`C:\data\profiles\abc`)
 	if p.Code != ProfileStorage || !strings.Contains(p.Message, `C:\data\profiles\abc`) {
 		t.Fatal(p)
+	}
+}
+
+// Тексты локальных причин переписки — дословно по таблице контракта.
+func TestMessagingCodes(t *testing.T) {
+	want := map[string]string{
+		QueueFull:        "Очередь собеседника на сервере заполнена: передача продолжится, когда он примет данные",
+		ChatNotReady:     "Ключ чата ещё не согласован на сервере",
+		StreamReplaced:   "Приём этого чата идёт на другом устройстве",
+		AckTimeout:       "Приём прерван сервером, возобновляется",
+		EmptyText:        "Введите текст сообщения",
+		TextTooLong:      "Сообщение длиннее 64 КиБ: отправьте его файлом",
+		FileTooLarge:     "Файл больше 256 МиБ",
+		FileRead:         "Не удалось прочитать файл",
+		SourceChanged:    "Файл изменён во время отправки: выберите его снова",
+		MessageNotFound:  "Сообщение не найдено",
+		NotCancellable:   "Операция уже завершена",
+		NotRetryable:     "Повтор расшифрования недоступен",
+		NotAFile:         "Это сообщение нельзя сохранить как файл",
+		FileWrite:        "Не удалось сохранить файл",
+		ChatActive:       "Сначала закройте чат",
+		MessageCorrupted: "Сообщение повреждено и не может быть показано",
+		KeyMissing:       "Ключ этого чата удалён: сообщение нельзя расшифровать",
+		LocalWrite:       "Не удалось записать данные на устройство: операция повторится",
+	}
+	for code, text := range want {
+		if got := New(code); got.Code != code || got.Message != text {
+			t.Errorf("%s: %+v", code, got)
+		}
+	}
+	blocks := map[string]string{
+		BlockKeyNotReady:          "Ключ ещё не согласован",
+		BlockNotConnected:         "Подключитесь к чату",
+		BlockReceivingElsewhere:   "Приём идёт на другом устройстве",
+		BlockAlgorithmUnavailable: "Алгоритм не реализован в этой сборке",
+		BlockChatClosed:           "Чат закрыт",
+	}
+	for field, text := range blocks {
+		if got := Blocked(field); got.Code != SendBlocked || got.Field != field || got.Message != text {
+			t.Errorf("%s: %+v", field, got)
+		}
+	}
+}
+
+// Строки 006 не изменились: временная недоступность сервера по-прежнему SERVER_BUSY.
+func TestUnchangedRows(t *testing.T) {
+	for _, r := range []string{"STORE_UNAVAILABLE", "BROKER_UNAVAILABLE", "SERVER_STOPPING"} {
+		if got := FromStatus(serverErr(t, codes.Unavailable, r, nil)); got.Code != ServerBusy {
+			t.Errorf("%s: %s", r, got.Code)
+		}
 	}
 }

@@ -23,12 +23,15 @@ func main() {
 		fmt.Fprintln(os.Stderr, "интерфейс не собран: выполните client/scripts/build.sh")
 		os.Exit(1)
 	}
-	app := NewApp(service.New(service.Config{}))
+	svc := service.New(service.Config{})
+	app := NewApp(svc)
+	app.media = &mediaCounter{h: svc.Media()}
 	err := wails.Run(&options.App{
-		Title:       "Крипточат",
-		Width:       1100,
-		Height:      720,
-		AssetServer: &assetserver.Options{Assets: assets},
+		Title:  "Крипточат",
+		Width:  1100,
+		Height: 720,
+		// Запросы, для которых нет файла интерфейса, получает обработчик картинок /media/<seq>.
+		AssetServer: &assetserver.Options{Assets: assets, Handler: app.media},
 		OnStartup:   app.startup,
 		OnShutdown:  app.shutdown,
 		Bind:        []interface{}{app},

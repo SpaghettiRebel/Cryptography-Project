@@ -14,6 +14,7 @@ import (
 
 	"cryptochat/client/internal/apperr"
 	"cryptochat/client/internal/ciphers"
+	"cryptochat/client/internal/delivery"
 	"cryptochat/client/internal/keyagree"
 	"cryptochat/client/internal/localdb"
 	"cryptochat/client/internal/profile"
@@ -76,11 +77,15 @@ type session struct {
 	done   chan struct{}
 	ended  bool
 
+	engine *delivery.Engine // доставка сообщений; создаётся при входе
+
 	contacts rpcclient.Contacts
 	chats    map[[16]byte]*chatState
 	// closed — чаты, закрытые на устройстве за эту сессию. Синхронизация, начатая до закрытия, не
 	// возвращает их в список и не создаёт для них секрет. Меняется под Service.keyMu и Service.mu.
 	closed map[[16]byte]bool
+	// closing — чаты, которые пользователь закрывает прямо сейчас. Меняется под Service.mu.
+	closing map[[16]byte]bool
 
 	storageFaults int  // число ошибок записи в базу профиля за сессию
 	storageAlert  bool // об ошибке записи уже сообщено; сбрасывается после цикла без ошибок
@@ -185,8 +190,8 @@ func (s *Service) Snapshot() Snapshot {
 	return s.snap
 }
 
-// buildLocked собирает снимок из состояния; вызывается под s.mu.
-func (s *Service) buildLocked() Snapshot {
+// buildLocked собирает снимок из состояния; вызывается под s.mu. unread — числа новых сообщений.
+func (s *Service) buildLocked(unread map[[16]byte]int) Snapshot {
 	snap := Snapshot{Connection: s.connection, Contacts: []string{}, Incoming: []string{}, Outgoing: []string{}, Chats: []ChatInfo{}}
 	sess := s.sess
 	if sess == nil {
@@ -197,7 +202,9 @@ func (s *Service) buildLocked() Snapshot {
 	snap.Incoming = sortedLogins(sess.contacts.Incoming)
 	snap.Outgoing = sortedLogins(sess.contacts.Outgoing)
 	for _, c := range sess.chats {
-		snap.Chats = append(snap.Chats, chatInfo(c))
+		info := chatInfoLocked(sess, c)
+		info.Unread = unread[c.local.ID]
+		snap.Chats = append(snap.Chats, info)
 	}
 	sort.Slice(snap.Chats, func(i, j int) bool {
 		if !snap.Chats[i].CreatedAt.Equal(snap.Chats[j].CreatedAt) {
@@ -206,6 +213,14 @@ func (s *Service) buildLocked() Snapshot {
 		return string(snap.Chats[i].ID[:]) < string(snap.Chats[j].ID[:])
 	})
 	return snap
+}
+
+// chatInfoLocked — чат с состоянием приёма и доступностью отправки; вызывается под s.mu.
+func chatInfoLocked(sess *session, c *chatState) ChatInfo {
+	info := chatInfo(c)
+	block, recv, reason := sendBlockLocked(sess, c)
+	info.ReceiveState, info.ReceiveReason, info.SendBlock, info.CanSend = recv, reason, block, block == ""
+	return info
 }
 
 func chatInfo(c *chatState) ChatInfo {
@@ -223,8 +238,9 @@ func chatInfo(c *chatState) ChatInfo {
 
 // publish пересобирает снимок и отправляет его, если он изменился.
 func (s *Service) publish() {
+	unread := s.unreadCounts()
 	s.mu.Lock()
-	next := s.buildLocked()
+	next := s.buildLocked(unread)
 	if sameContent(next, s.snap) {
 		s.mu.Unlock()
 		return
@@ -334,6 +350,11 @@ func (s *Service) endSession(sess *session, code string, wait bool) {
 	sess.cancel()
 	closeDB := func() {
 		<-sess.done
+		// Доставка останавливается до закрытия базы: потоки закрываются без подтверждения несохранённого,
+		// состояния сообщений не меняются.
+		if sess.engine != nil {
+			sess.engine.Stop()
+		}
 		if err := sess.db.Close(); err != nil {
 			s.log.Printf("закрытие базы профиля: %v", err)
 		}

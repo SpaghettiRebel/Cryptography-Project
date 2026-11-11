@@ -36,6 +36,13 @@ type ChatInfo struct {
 	PeerConnected bool
 	KeyState      keyagree.State
 	AlgorithmNote string
+
+	// Переписка: новые сообщения, состояние приёма, доступность отправки.
+	Unread        int
+	ReceiveState  string
+	ReceiveReason string
+	CanSend       bool
+	SendBlock     string
 }
 
 // Snapshot — неизменяемый снимок состояния. Получатель не должен менять срезы.

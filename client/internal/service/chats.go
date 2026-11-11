@@ -72,6 +72,9 @@ func (s *Service) CreateChat(req CreateChatRequest) (ChatInfo, error) {
 		if err := s.remember(sess, c); err != nil {
 			return err
 		}
+		if err := sess.engine.OpenReceiver(c.ID); err != nil {
+			s.log.Printf("желание принимать чат не записано")
+		}
 		s.advance(sess, c)
 		return nil
 	})
@@ -81,16 +84,26 @@ func (s *Service) CreateChat(req CreateChatRequest) (ChatInfo, error) {
 	return s.chatByID(id)
 }
 
-// ConnectChat подключает к чату и, если ключа нет, сразу продвигает согласование.
+// ConnectChat подключает к чату, открывает поток приёма и, если ключа нет, сразу продвигает согласование.
 func (s *Service) ConnectChat(chatID string) (ChatInfo, error) {
 	return s.chatAction(chatID, func(sess *session, id [16]byte) (rpcclient.Chat, error) {
-		return sess.api.ConnectChat(sess.ctx, id)
+		c, err := sess.api.ConnectChat(sess.ctx, id)
+		if err == nil && !c.Closed() {
+			if err := sess.engine.OpenReceiver(id); err != nil {
+				s.log.Printf("желание принимать чат не записано")
+			}
+		}
+		return c, err
 	}, true)
 }
 
-// DisconnectChat отключает от чата; ключ остаётся на устройстве.
+// DisconnectChat закрывает поток приёма без подтверждения несохранённого и отключает от чата; ключ
+// остаётся на устройстве.
 func (s *Service) DisconnectChat(chatID string) (ChatInfo, error) {
 	return s.chatAction(chatID, func(sess *session, id [16]byte) (rpcclient.Chat, error) {
+		if err := sess.engine.CloseReceiver(id); err != nil {
+			s.log.Printf("отказ от приёма чата не записан")
+		}
 		return sess.api.DisconnectChat(sess.ctx, id)
 	}, false)
 }
@@ -133,6 +146,19 @@ func (s *Service) CloseChat(chatID string) error {
 		return err
 	}
 	return s.action(func(sess *session) error {
+		// Пока чат закрывается здесь, сверка не считает его закрытым собеседником: поток приёма завершится
+		// с CHAT_CLOSED раньше, чем чат уберётся с устройства.
+		s.mu.Lock()
+		if sess.closing == nil {
+			sess.closing = map[[16]byte]bool{}
+		}
+		sess.closing[id] = true
+		s.mu.Unlock()
+		defer func() {
+			s.mu.Lock()
+			delete(sess.closing, id)
+			s.mu.Unlock()
+		}()
 		_, err := sess.api.CloseChat(sess.ctx, id)
 		if err == nil || apperr.Is(err, apperr.ChatNotFound) {
 			s.forgetChat(sess, id)
@@ -184,7 +210,7 @@ func (s *Service) chatByID(id [16]byte) (ChatInfo, error) {
 	if !ok {
 		return ChatInfo{}, apperr.New(apperr.ChatNotFound)
 	}
-	return chatInfo(st), nil
+	return chatInfoLocked(s.sess, st), nil
 }
 
 // closedLocally сообщает, что чат закрыт на устройстве в этой сессии.
@@ -196,6 +222,18 @@ func (s *Service) closedLocally(sess *session, id [16]byte) bool {
 
 // forgetChat отмечает чат закрытым на устройстве, удаляет его секрет и ключ и убирает из списка активных.
 func (s *Service) forgetChat(sess *session, id [16]byte) {
+	// Незавершённые передачи останавливаются до удаления ключа.
+	s.mu.Lock()
+	peer := ""
+	if st := sess.chats[id]; st != nil {
+		peer = st.local.Peer
+	}
+	s.mu.Unlock()
+	if sess.engine != nil {
+		if n := sess.engine.ChatClosed(id); n > 0 {
+			s.notice(NoticeWarning, "TRANSFERS_INTERRUPTED", "Чат с "+peer+" закрыт: незавершённые передачи остановлены")
+		}
+	}
 	s.keyMu.Lock()
 	s.mu.Lock()
 	if sess.closed == nil {

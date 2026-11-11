@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function AcceptContact(arg1:string):Promise<void>;
 
+export function CancelMessage(arg1:number):Promise<main.MessageView>;
+
 export function ChatOptions():Promise<main.ChatOptions>;
 
 export function CheckServer():Promise<void>;
@@ -16,6 +18,8 @@ export function ConnectChat(arg1:string):Promise<main.ChatView>;
 
 export function CreateChat(arg1:main.CreateChatRequest):Promise<main.ChatView>;
 
+export function DeleteChatHistory(arg1:string):Promise<void>;
+
 export function DisconnectChat(arg1:string):Promise<main.ChatView>;
 
 export function FrontendReady():Promise<void>;
@@ -24,9 +28,17 @@ export function GetSettings():Promise<main.Settings>;
 
 export function GetSnapshot():Promise<main.Snapshot>;
 
+export function ListClosedChats():Promise<Array<main.ClosedChatView>>;
+
+export function ListMessages(arg1:string,arg2:number,arg3:number):Promise<main.MessagePage>;
+
 export function Login(arg1:string,arg2:string):Promise<main.Snapshot>;
 
 export function Logout():Promise<void>;
+
+export function MarkRead(arg1:string):Promise<void>;
+
+export function ReceiveHere(arg1:string):Promise<main.ChatView>;
 
 export function Register(arg1:string,arg2:string):Promise<void>;
 
@@ -34,6 +46,14 @@ export function RejectContact(arg1:string):Promise<void>;
 
 export function RemoveContact(arg1:string):Promise<void>;
 
+export function RetryDecrypt(arg1:number):Promise<main.MessageView>;
+
+export function SaveFile(arg1:number):Promise<string>;
+
 export function SaveSettings(arg1:main.Settings):Promise<main.Settings>;
 
 export function SendContactRequest(arg1:string):Promise<main.ContactResult>;
+
+export function SendFile(arg1:string):Promise<main.MessageView>;
+
+export function SendText(arg1:string,arg2:string):Promise<main.MessageView>;

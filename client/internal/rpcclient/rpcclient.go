@@ -100,6 +100,11 @@ type API interface {
 	PublishPublicValue(ctx context.Context, id [16]byte, value []byte) error
 	GetPeerPublicValue(ctx context.Context, id [16]byte) ([]byte, bool, error)
 
+	// SendFragment передаёт сериализованный фрагмент; успех означает, что брокер его принял.
+	SendFragment(ctx context.Context, chatID [16]byte, wire []byte) error
+	// OpenReceive открывает поток приёма чата и возвращает его после ответа opened.
+	OpenReceive(ctx context.Context, chatID [16]byte) (ReceiveStream, error)
+
 	Close() error
 }
 
@@ -117,6 +122,7 @@ type Conn struct {
 	chats    apiv1.ChatsClient
 	keys     apiv1.KeyExchangeClient
 	health   healthpb.HealthClient
+	delivery apiv1.DeliveryClient
 }
 
 var _ API = (*Conn)(nil)
@@ -158,6 +164,7 @@ func Dial(address, certPath string) (*Conn, error) {
 	c.chats = apiv1.NewChatsClient(cc)
 	c.keys = apiv1.NewKeyExchangeClient(cc)
 	c.health = healthpb.NewHealthClient(cc)
+	c.delivery = apiv1.NewDeliveryClient(cc)
 	return c, nil
 }
 

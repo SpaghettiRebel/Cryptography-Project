@@ -46,6 +46,38 @@ const (
 	AlgorithmUnavailable = "ALGORITHM_UNAVAILABLE"
 	PeerValueInvalid     = "PEER_VALUE_INVALID"
 	Internal             = "INTERNAL"
+
+	// Причины сервера доставки.
+	QueueFull      = "QUEUE_FULL"
+	ChatNotReady   = "CHAT_NOT_READY"
+	StreamReplaced = "STREAM_REPLACED"
+	AckTimeout     = "ACK_TIMEOUT"
+
+	// Локальные причины переписки.
+	EmptyText        = "EMPTY_TEXT"
+	TextTooLong      = "TEXT_TOO_LONG"
+	FileTooLarge     = "FILE_TOO_LARGE"
+	FileRead         = "FILE_READ"
+	SourceChanged    = "SOURCE_CHANGED"
+	SendBlocked      = "SEND_BLOCKED"
+	MessageNotFound  = "MESSAGE_NOT_FOUND"
+	NotCancellable   = "NOT_CANCELLABLE"
+	NotRetryable     = "NOT_RETRYABLE"
+	NotAFile         = "NOT_A_FILE"
+	FileWrite        = "FILE_WRITE"
+	ChatActive       = "CHAT_ACTIVE"
+	MessageCorrupted = "MESSAGE_CORRUPTED"
+	KeyMissing       = "KEY_MISSING"
+	LocalWrite       = "LOCAL_WRITE"
+)
+
+// Причины недоступности отправки (поле field ошибки SEND_BLOCKED).
+const (
+	BlockKeyNotReady          = "KEY_NOT_READY"
+	BlockNotConnected         = "NOT_CONNECTED"
+	BlockReceivingElsewhere   = "RECEIVING_ELSEWHERE"
+	BlockAlgorithmUnavailable = "ALGORITHM_UNAVAILABLE"
+	BlockChatClosed           = "CHAT_CLOSED"
 )
 
 var messages = map[string]string{
@@ -81,6 +113,45 @@ var messages = map[string]string{
 	AlgorithmUnavailable: "Алгоритм не реализован в этой сборке",
 	PeerValueInvalid:     "Собеседник прислал недопустимое значение; закройте чат",
 	Internal:             "Внутренняя ошибка клиента",
+
+	QueueFull:      "Очередь собеседника на сервере заполнена: передача продолжится, когда он примет данные",
+	ChatNotReady:   "Ключ чата ещё не согласован на сервере",
+	StreamReplaced: "Приём этого чата идёт на другом устройстве",
+	AckTimeout:     "Приём прерван сервером, возобновляется",
+
+	EmptyText:        "Введите текст сообщения",
+	TextTooLong:      "Сообщение длиннее 64 КиБ: отправьте его файлом",
+	FileTooLarge:     "Файл больше 256 МиБ",
+	FileRead:         "Не удалось прочитать файл",
+	SourceChanged:    "Файл изменён во время отправки: выберите его снова",
+	SendBlocked:      "Отправка недоступна",
+	MessageNotFound:  "Сообщение не найдено",
+	NotCancellable:   "Операция уже завершена",
+	NotRetryable:     "Повтор расшифрования недоступен",
+	NotAFile:         "Это сообщение нельзя сохранить как файл",
+	FileWrite:        "Не удалось сохранить файл",
+	ChatActive:       "Сначала закройте чат",
+	MessageCorrupted: "Сообщение повреждено и не может быть показано",
+	KeyMissing:       "Ключ этого чата удалён: сообщение нельзя расшифровать",
+	LocalWrite:       "Не удалось записать данные на устройство: операция повторится",
+}
+
+// blockMessages — тексты SEND_BLOCKED по причине.
+var blockMessages = map[string]string{
+	BlockKeyNotReady:          "Ключ ещё не согласован",
+	BlockNotConnected:         "Подключитесь к чату",
+	BlockReceivingElsewhere:   "Приём идёт на другом устройстве",
+	BlockAlgorithmUnavailable: "Алгоритм не реализован в этой сборке",
+	BlockChatClosed:           "Чат закрыт",
+}
+
+// Blocked — отправка недоступна по причине block; причина уходит в поле field.
+func Blocked(block string) *Error {
+	e := WithField(SendBlocked, block)
+	if m, ok := blockMessages[block]; ok {
+		e.Message = m
+	}
+	return e
 }
 
 // Error — ошибка клиента. Message не содержит паролей, токенов, ключей и идентификаторов чатов.
@@ -176,14 +247,14 @@ var reasons = map[string]string{
 	"STORE_UNAVAILABLE":  ServerBusy,
 	"BROKER_UNAVAILABLE": ServerBusy,
 	"SERVER_STOPPING":    ServerBusy,
-	// Причины передачи фрагментов.
-	"QUEUE_FULL":             ServerBusy,
-	"CHAT_NOT_READY":         ServerBusy,
-	"STREAM_REPLACED":        ServerBusy,
-	"ACK_TIMEOUT":            ServerBusy,
-	"INVALID_FRAGMENT":       ServerBusy,
-	"FRAGMENT_TOO_LARGE":     ServerBusy,
-	"INVALID_STREAM_REQUEST": ServerBusy,
+	// Причины передачи фрагментов. Отказ в формате фрагмента или запроса потока означает ошибку клиента.
+	"QUEUE_FULL":             QueueFull,
+	"CHAT_NOT_READY":         ChatNotReady,
+	"STREAM_REPLACED":        StreamReplaced,
+	"ACK_TIMEOUT":            AckTimeout,
+	"INVALID_FRAGMENT":       Internal,
+	"FRAGMENT_TOO_LARGE":     Internal,
+	"INVALID_STREAM_REQUEST": Internal,
 }
 
 var fields = map[string]string{InvalidLogin: "login", InvalidPassword: "password"}

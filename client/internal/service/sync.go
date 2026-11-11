@@ -62,12 +62,16 @@ func (s *Service) syncOnce(sess *session) {
 		s.publish()
 		return
 	}
+	wanted := map[[16]byte]bool{}
 	for _, c := range active {
 		if sess.ctx.Err() != nil {
 			return
 		}
 		s.advance(sess, c)
+		wanted[c.ID] = c.Self.Connected
 	}
+	// Приём открывается для чатов, где он нужен; ожидающие ключа расшифрования и передачи продолжаются.
+	sess.engine.Sync(wanted)
 	s.storageRecovered(sess, faults)
 	s.publish()
 }
@@ -110,8 +114,13 @@ func (s *Service) reconcile(sess *session, active map[[16]byte]rpcclient.Chat) b
 				return false
 			}
 		case err == nil:
+			s.mu.Lock()
+			own := sess.closing[id]
+			s.mu.Unlock()
 			s.forgetChat(sess, id)
-			s.notice(NoticeInfo, "CHAT_CLOSED_BY_PEER", "Чат с "+peer+" закрыт собеседником, ключ удалён с устройства")
+			if !own {
+				s.notice(NoticeInfo, "CHAT_CLOSED_BY_PEER", "Чат с "+peer+" закрыт собеседником, ключ удалён с устройства")
+			}
 		case apperr.Is(err, apperr.ChatNotFound):
 			s.forgetChat(sess, id)
 			s.notice(NoticeInfo, apperr.ChatNotFound, "Чат с "+peer+" больше не существует на сервере, ключ удалён с устройства")

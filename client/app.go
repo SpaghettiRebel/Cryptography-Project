@@ -19,6 +19,7 @@ type App struct {
 	ctx   context.Context // контекст окна; startup записывает его из другой горутины, чем вызовы методов
 	svc   *service.Service
 	log   *log.Logger
+	media *mediaCounter // обработчик картинок окна; nil в тестах
 }
 
 // NewApp создаёт фасад над сервисом.
@@ -158,4 +159,111 @@ func (a *App) DisconnectChat(chatID string) (c ChatView, err error) {
 func (a *App) CloseChat(chatID string) (err error) {
 	defer a.guard(&err)
 	return a.svc.CloseChat(chatID)
+}
+
+func (a *App) ListMessages(chatID string, beforeSeq int64, limit int) (p MessagePage, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.ListMessages(chatID, beforeSeq, limit)
+	return messagePageView(v), err
+}
+
+func (a *App) SendText(chatID, text string) (m MessageView, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.SendText(chatID, text)
+	return messageView(v), err
+}
+
+// Диалоги окна; подменяются в тестах.
+var (
+	openFileDialog = runtime.OpenFileDialog
+	saveFileDialog = runtime.SaveFileDialog
+)
+
+// dialogResult разбирает ответ диалога: закрытый диалог — пустой путь без ошибки, сбой диалога — ошибка
+// с кодом code, которую интерфейс показывает пользователю.
+func (a *App) dialogResult(path string, err error, code string) (string, error) {
+	if err != nil {
+		a.log.Printf("диалог выбора файла не открылся")
+		return "", apperr.New(code)
+	}
+	return path, nil
+}
+
+// SendFile открывает стандартный диалог выбора файла и ставит файл в очередь; закрытый диалог — null,
+// сбой диалога — FILE_READ.
+func (a *App) SendFile(chatID string) (m *MessageView, err error) {
+	defer a.guard(&err)
+	ctx := a.context()
+	if ctx == nil {
+		return nil, apperr.New(apperr.Internal)
+	}
+	path, err := openFileDialog(ctx, runtime.OpenDialogOptions{Title: "Файл для отправки"})
+	if path, err = a.dialogResult(path, err, apperr.FileRead); err != nil {
+		return nil, err
+	}
+	if path == "" {
+		return nil, nil
+	}
+	v, err := a.svc.SendFile(chatID, path)
+	if err != nil {
+		return nil, err
+	}
+	out := messageView(v)
+	return &out, nil
+}
+
+func (a *App) CancelMessage(seq int64) (m MessageView, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.CancelMessage(seq)
+	return messageView(v), err
+}
+
+func (a *App) RetryDecrypt(seq int64) (m MessageView, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.RetryDecrypt(seq)
+	return messageView(v), err
+}
+
+// SaveFile открывает стандартный диалог сохранения с очищенным именем и записывает файл; закрытый
+// диалог — пустая строка, сбой диалога — FILE_WRITE.
+func (a *App) SaveFile(seq int64) (path string, err error) {
+	defer a.guard(&err)
+	name, err := a.svc.SaveName(seq)
+	if err != nil {
+		return "", err
+	}
+	ctx := a.context()
+	if ctx == nil {
+		return "", apperr.New(apperr.Internal)
+	}
+	path, err = saveFileDialog(ctx, runtime.SaveDialogOptions{Title: "Сохранить как", DefaultFilename: name})
+	if path, err = a.dialogResult(path, err, apperr.FileWrite); err != nil || path == "" {
+		return "", err
+	}
+	if err := a.svc.SaveFile(seq, path); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (a *App) MarkRead(chatID string) (err error) {
+	defer a.guard(&err)
+	return a.svc.MarkRead(chatID)
+}
+
+func (a *App) ReceiveHere(chatID string) (c ChatView, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.ReceiveHere(chatID)
+	return chatView(v), err
+}
+
+func (a *App) ListClosedChats() (list []ClosedChatView, err error) {
+	defer a.guard(&err)
+	v, err := a.svc.ListClosedChats()
+	return closedChatsView(v), err
+}
+
+func (a *App) DeleteChatHistory(chatID string) (err error) {
+	defer a.guard(&err)
+	return a.svc.DeleteChatHistory(chatID)
 }

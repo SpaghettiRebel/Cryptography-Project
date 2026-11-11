@@ -21,6 +21,58 @@ export type ChatView = {
   peerConnected: boolean;
   keyState: KeyState;
   algorithmNote: string;
+  unread: number;
+  receiveState: ReceiveState;
+  receiveReason: string;
+  canSend: boolean;
+  sendBlock: SendBlock;
+};
+
+export type ReceiveState = "OFF" | "OPENING" | "RECEIVING" | "RETRYING" | "ELSEWHERE";
+export type SendBlock = "" | "KEY_NOT_READY" | "NOT_CONNECTED" | "RECEIVING_ELSEWHERE" | "ALGORITHM_UNAVAILABLE" | "CHAT_CLOSED";
+
+export type MessageState =
+  | "QUEUED" | "SENDING" | "WAITING" | "SENT" | "CANCELLED" | "FAILED" | "UNDELIVERED"
+  | "RECEIVING" | "DECRYPT_PENDING" | "DECRYPTING" | "DECRYPT_CANCELLED" | "DONE"
+  | "CANCELLED_BY_PEER" | "CORRUPTED" | "KEY_MISSING";
+
+export type Progress = { done: number; total: number };
+
+export type MessageView = {
+  seq: number;
+  chatId: string;
+  direction: "out" | "in";
+  kind: "pending" | "text" | "image" | "file";
+  createdAt: number;
+  state: MessageState;
+  text: string;
+  fileName: string;
+  size: number;
+  mediaUrl: string;
+  error: { code: string; message: string } | null;
+  encrypt: Progress | null;
+  send: Progress | null;
+  receive: Progress | null;
+  decrypt: Progress | null;
+  cancellable: boolean;
+  retryable: boolean;
+};
+
+export type MessagePage = { messages: MessageView[]; hasMore: boolean };
+export type Stage = "encrypt" | "send" | "receive" | "decrypt";
+export type ProgressEvent = { seq: number; chatId: string; stage: Stage; done: number; total: number };
+export type MessagesEvent = { chatId: string; changed: MessageView[] };
+
+export type ClosedChatView = {
+  id: string;
+  peer: string;
+  algorithm: string;
+  keyBits: number;
+  cipherMode: string;
+  padding: string;
+  createdAt: number;
+  closedAt: number;
+  messageCount: number;
 };
 
 export type Snapshot = {
@@ -82,12 +134,24 @@ export const api = {
   connectChat: (id: string) => Go.ConnectChat(id) as Promise<ChatView>,
   disconnectChat: (id: string) => Go.DisconnectChat(id) as Promise<ChatView>,
   closeChat: (id: string) => Go.CloseChat(id),
+  listMessages: (id: string, beforeSeq: number, limit: number) => Go.ListMessages(id, beforeSeq, limit) as Promise<MessagePage>,
+  sendText: (id: string, text: string) => Go.SendText(id, text) as Promise<MessageView>,
+  sendFile: (id: string) => Go.SendFile(id) as Promise<MessageView | null>,
+  cancelMessage: (seq: number) => Go.CancelMessage(seq) as Promise<MessageView>,
+  retryDecrypt: (seq: number) => Go.RetryDecrypt(seq) as Promise<MessageView>,
+  saveFile: (seq: number) => Go.SaveFile(seq) as Promise<string>,
+  markRead: (id: string) => Go.MarkRead(id),
+  receiveHere: (id: string) => Go.ReceiveHere(id) as Promise<ChatView>,
+  listClosedChats: () => Go.ListClosedChats() as Promise<ClosedChatView[]>,
+  deleteChatHistory: (id: string) => Go.DeleteChatHistory(id),
 };
 
 export type Handlers = {
   snapshot: (s: Snapshot) => void;
   notice: (n: Notice) => void;
   sessionEnded: (e: SessionEnded) => void;
+  messages?: (e: MessagesEvent) => void;
+  progress?: (e: ProgressEvent) => void;
 };
 
 /** Подписывается на события Go; возвращает отписку. */
@@ -96,6 +160,8 @@ export function subscribe(h: Handlers): () => void {
     EventsOn("snapshot", (s: Snapshot) => h.snapshot(s)),
     EventsOn("notice", (n: Notice) => h.notice(n)),
     EventsOn("session-ended", (e: SessionEnded) => h.sessionEnded(e)),
+    EventsOn("messages", (e: MessagesEvent) => h.messages?.(e)),
+    EventsOn("progress", (e: ProgressEvent) => h.progress?.(e)),
   ];
   return () => offs.forEach((off) => off());
 }

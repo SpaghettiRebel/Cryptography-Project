@@ -39,6 +39,7 @@ type Server struct {
 	down      bool
 	clock     time.Time
 	published int
+	d         *deliveryState
 }
 
 // NewServer создаёт пустой сервер.
@@ -52,6 +53,9 @@ func NewServer() *Server {
 func (s *Server) SetDown(down bool) {
 	s.mu.Lock()
 	s.down = down
+	if down {
+		s.endAllLocked(apperr.New(apperr.ServerUnavailable))
+	}
 	s.mu.Unlock()
 }
 
@@ -98,6 +102,7 @@ func (s *Server) CloseAs(id [16]byte) {
 		for k := range c.conn {
 			c.conn[k] = false
 		}
+		s.dropChatLocked(id)
 	}
 }
 
@@ -128,6 +133,9 @@ type Client struct {
 	token string
 	calls []string
 	hook  func(method string) error
+
+	sendHook func(n int, wire []byte) (bool, error)
+	sends    int
 }
 
 // SetHook задаёт функцию, которая вызывается в начале каждого метода с его именем; ненулевая ошибка
@@ -364,6 +372,7 @@ func (c *Client) RemoveContact(ctx context.Context, login string) error {
 		if pair(ch.members[0], ch.members[1]) == pair(me, other) && ch.closed.IsZero() {
 			ch.closed = s.tick()
 			ch.values = map[string][]byte{}
+			s.dropChatLocked(ch.id)
 		}
 	}
 	return nil
@@ -531,6 +540,7 @@ func (c *Client) CloseChat(ctx context.Context, id [16]byte) (rpcclient.Chat, er
 			ch.closed = c.srv.tick()
 			ch.values = map[string][]byte{}
 			ch.conn = map[string]bool{}
+			c.srv.dropChatLocked(id)
 		}
 		return nil
 	})

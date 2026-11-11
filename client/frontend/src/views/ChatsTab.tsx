@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { api, type ChatView, type KeyState } from "../backend";
+import { api, type ChatView, type ClosedChatView, type KeyState } from "../backend";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CreateChatDialog from "../components/CreateChatDialog";
 import { useStore } from "../store";
 import { useAction } from "../useAction";
+import ClosedChats from "./ClosedChats";
+import ConversationView, { receiveText } from "./ConversationView";
 
 const OFFLINE_HINT = "нет связи с сервером";
 
@@ -19,21 +21,32 @@ export const keyStateText: Record<KeyState, string> = {
 const modeTitle: Record<string, string> = { RANDOM_DELTA: "Random Delta" };
 const paddingTitle: Record<string, string> = { ZEROS: "Zeros", ANSI_X923: "ANSI X.923", ISO_10126: "ISO 10126" };
 
-export function paramsText(c: ChatView) {
+export function paramsText(c: Pick<ChatView, "algorithm" | "keyBits" | "cipherMode" | "padding">) {
   return [c.algorithm, String(c.keyBits), modeTitle[c.cipherMode] ?? c.cipherMode, paddingTitle[c.padding] ?? c.padding].join(" · ");
 }
 
-function ChatItem({ chat, offline, onClose }: { chat: ChatView; offline: boolean; onClose: (c: ChatView) => void }) {
+type ItemProps = { chat: ChatView; offline: boolean; onClose: (c: ChatView) => void; onOpen: (c: ChatView) => void };
+
+function ChatItem({ chat, offline, onClose, onOpen }: ItemProps) {
   const connect = useAction(api.connectChat);
   const disconnect = useAction(api.disconnectChat);
+  const here = useAction(api.receiveHere);
   const busy = connect.busy || disconnect.busy;
-  const error = connect.error ?? disconnect.error;
+  const error = connect.error ?? disconnect.error ?? here.error;
   const broken = chat.keyState === "KEY_LOST" || chat.keyState === "PEER_VALUE_INVALID";
   return (
     <li data-testid="chat-item">
       <div className="grow">
         <div>
-          <strong>{chat.peer}</strong> <span className="chat-meta">создатель: {chat.creator}</span>
+          <button type="button" className="link" onClick={() => onOpen(chat)} data-testid="chat-open">
+            <strong>{chat.peer}</strong>
+          </button>{" "}
+          {chat.unread > 0 && (
+            <span className="badge" data-testid="chat-unread" title="новые сообщения">
+              {chat.unread}
+            </span>
+          )}{" "}
+          <span className="chat-meta">создатель: {chat.creator}</span>
         </div>
         <div className="chat-meta">
           <span data-testid="chat-params">{paramsText(chat)}</span> ·{" "}
@@ -44,6 +57,17 @@ function ChatItem({ chat, offline, onClose }: { chat: ChatView; offline: boolean
         </div>
         <div className={`key-${chat.keyState}`} data-testid="chat-key">
           {keyStateText[chat.keyState] ?? chat.keyState}
+        </div>
+        <div className="chat-meta" data-testid="chat-receive">
+          {receiveText(chat)}
+          {chat.receiveState === "ELSEWHERE" && (
+            <>
+              {" "}
+              <button type="button" disabled={here.busy || offline} onClick={() => void here.run(chat.id)} data-testid="chat-receive-here">
+                {here.busy ? "Подключение…" : "Получать здесь"}
+              </button>
+            </>
+          )}
         </div>
         {broken && (
           <div className="hint" data-testid="chat-key-hint">
@@ -79,7 +103,12 @@ export default function ChatsTab({ onOpenContacts }: { onOpenContacts: () => voi
   const offline = snapshot.connection === "offline";
   const [creating, setCreating] = useState(false);
   const [closing, setClosing] = useState<ChatView | null>(null);
+  const [open, setOpen] = useState<{ id: string; closed?: ClosedChatView } | null>(null);
   const close = useAction(api.closeChat);
+
+  if (open) {
+    return <ConversationView chatId={open.id} closed={open.closed} onBack={() => setOpen(null)} />;
+  }
 
   return (
     <section className="chats">
@@ -95,9 +124,10 @@ export default function ChatsTab({ onOpenContacts }: { onOpenContacts: () => voi
           </li>
         )}
         {snapshot.chats.map((c) => (
-          <ChatItem key={c.id} chat={c} offline={offline} onClose={setClosing} />
+          <ChatItem key={c.id} chat={c} offline={offline} onClose={setClosing} onOpen={(x) => setOpen({ id: x.id })} />
         ))}
       </ul>
+      <ClosedChats onHistory={(c) => setOpen({ id: c.id, closed: c })} />
       {creating && <CreateChatDialog contacts={snapshot.contacts} onClose={() => setCreating(false)} onOpenContacts={onOpenContacts} />}
       {closing && (
         <ConfirmDialog

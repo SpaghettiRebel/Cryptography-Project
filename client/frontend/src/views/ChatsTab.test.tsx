@@ -18,6 +18,7 @@ const chat = (patch: Partial<ChatView>): ChatView => ({
   peerConnected: false,
   keyState: "WAITING_PEER",
   algorithmNote: "",
+  unread: 0, receiveState: "RECEIVING", receiveReason: "", canSend: true, sendBlock: "",
   ...patch,
 });
 
@@ -122,4 +123,49 @@ test("все состояния ключа показываются тексто
   });
   expect(keyStateText.WAITING_SELF).toBe("публикация значения…");
   expect(keyStateText.PEER_VALUE_INVALID).toBe("собеседник прислал недопустимое значение: закройте чат");
+});
+
+test("значок новых сообщений и состояние приёма словами", () => {
+  withSnapshot({
+    chats: [
+      chat({ id: "a".repeat(32), unread: 3, receiveState: "RECEIVING" }),
+      chat({ id: "b".repeat(32), receiveState: "RETRYING", receiveReason: "SERVER_BUSY" }),
+      chat({ id: "c".repeat(32), receiveState: "OPENING" }),
+    ],
+  });
+  render(<ChatsTab onOpenContacts={() => undefined} />);
+  const items = screen.getAllByTestId("chat-item").map((el) => within(el));
+  expect(items[0].getByTestId("chat-unread").textContent).toBe("3");
+  expect(items[0].getByTestId("chat-receive").textContent).toBe("приём");
+  expect(items[1].queryByTestId("chat-unread")).toBeNull();
+  expect(items[1].getByTestId("chat-receive").textContent).toBe("повтор: сервер занят");
+  expect(items[2].getByTestId("chat-receive").textContent).toBe("подключение…");
+});
+
+test("приём на другом устройстве: «Получать здесь» блокируется на время вызова", async () => {
+  let release: (v: unknown) => void = () => undefined;
+  W.ReceiveHere.mockImplementationOnce(() => new Promise((r) => (release = r)));
+  withSnapshot({ chats: [chat({ receiveState: "ELSEWHERE", canSend: false, sendBlock: "RECEIVING_ELSEWHERE" })] });
+  render(<ChatsTab onOpenContacts={() => undefined} />);
+  expect(screen.getByTestId("chat-receive").textContent).toContain("приём на другом устройстве");
+  fireEvent.click(screen.getByTestId("chat-receive-here"));
+  await waitFor(() => expect((screen.getByTestId("chat-receive-here") as HTMLButtonElement).disabled).toBe(true));
+  expect(W.ReceiveHere).toHaveBeenCalledWith("0123456789abcdef0123456789abcdef");
+  release({});
+});
+
+test("нажатие на чат открывает окно переписки и отмечает просмотр", async () => {
+  withSnapshot({ chats: [chat({ unread: 2, keyState: "READY" })] });
+  render(<ChatsTab onOpenContacts={() => undefined} />);
+  fireEvent.click(screen.getByTestId("chat-open"));
+  await waitFor(() => expect(screen.getByTestId("conversation")).toBeTruthy());
+  expect(W.MarkRead).toHaveBeenCalledWith("0123456789abcdef0123456789abcdef");
+  fireEvent.click(screen.getByTestId("conversation-back"));
+  expect(screen.getAllByTestId("chat-item")).toHaveLength(1);
+});
+
+test("раздел «Закрытые чаты» внизу вкладки", () => {
+  withSnapshot({});
+  render(<ChatsTab onOpenContacts={() => undefined} />);
+  expect(screen.getByTestId("closed-toggle").textContent).toContain("Закрытые чаты");
 });

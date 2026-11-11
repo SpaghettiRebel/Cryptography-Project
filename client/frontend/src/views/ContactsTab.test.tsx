@@ -8,6 +8,7 @@ import ContactsTab from "./ContactsTab";
 const chat = (id: string, peer: string) => ({
   id, peer, creator: peer, algorithm: "RC6", keyBits: 256, cipherMode: "CBC", padding: "PKCS7", createdAt: 1,
   selfConnected: false, peerConnected: false, keyState: "NONE", algorithmNote: "",
+  unread: 0, receiveState: "RECEIVING", receiveReason: "", canSend: true, sendBlock: "",
 });
 
 function withSnapshot(patch: Partial<Snapshot>) {

@@ -45,7 +45,7 @@ func TestOpenPragmasAndMigrations(t *testing.T) {
 		}
 	}
 	var n int
-	if err := db.sql.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n != 1 {
+	if err := db.sql.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("миграций %d: %v", n, err)
 	}
 	if db.Dir() != filepath.Dir(path) {
@@ -53,7 +53,7 @@ func TestOpenPragmasAndMigrations(t *testing.T) {
 	}
 	_ = db.Close()
 	db2 := open(t, path)
-	if err := db2.sql.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n != 1 {
+	if err := db2.sql.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n != 2 {
 		t.Fatalf("повторное открытие изменило миграции: %d %v", n, err)
 	}
 }

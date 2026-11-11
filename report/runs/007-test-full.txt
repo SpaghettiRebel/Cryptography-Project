@@ -1,0 +1,514 @@
+Способ проверки: повторная генерация кода gRPC и привязок Wails со сравнением, сборка, go vet и gofmt во всех модулях, быстрые тесты core и client, детектор гонок по одному разу (core и client с тегом devcipher, server без тега), сквозные тесты client (e2e,devcipher), integration (e2e,devcipher) и server (e2e) по одному разу на Docker Compose, сборка и тесты интерфейса в контейнере node:22-alpine, сборка окна Wails и пробный запуск обеих сборок с проверкой обработчика картинок.
+Wed Nov 11 18:09:29 RTZ 2026
+go version go1.23.1 windows/amd64
+Docker 29.8.0
+Docker Compose version v5.5.1
+v2.9.2
+[31;107m[31;107m ♥  [0m[0m [92m[92mIf Wails is useful to you or your company, please consider sponsoring the project:[0m[0m
+https://github.com/sponsors/leaanthony
+
+### генерация gRPC: код сервера и клиента совпадает с контрактом
+buf-generate=0
+warning: in the working copy of 'client/internal/api/v1/accounts.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/internal/api/v1/accounts_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/internal/api/v1/chats.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/internal/api/v1/chats_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/internal/api/v1/delivery.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/internal/api/v1/delivery_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/accounts.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/accounts_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/chats.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/chats_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/delivery.pb.go', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/api/v1/delivery_grpc.pb.go', LF will be replaced by CRLF the next time Git touches it
+git-diff-api=0
+diff-server-api=0
+diff-client-api=0
+
+### core: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### server: build/vet/gofmt
+build=0
+vet=0
+gofmt: []
+
+### integration: vet с тегами e2e,devcipher, gofmt
+vet-e2e-devcipher=0
+gofmt: []
+
+### client: build/vet/gofmt без тега, с devcipher и e2e,devcipher
+build=0
+vet=0
+build-devcipher=0
+vet-devcipher=0
+vet-e2e-devcipher=0
+gofmt: []
+
+### core: go test -short ./... (без тега)
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	0.369s
+ok  	cryptochat/core/cryptoctx	0.891s
+ok  	cryptochat/core/dh	1.990s
+ok  	cryptochat/core/internal/stubcipher	0.371s
+ok  	cryptochat/core/kdf	0.375s
+ok  	cryptochat/core/message	1.452s
+ok  	cryptochat/core/modes	0.344s
+ok  	cryptochat/core/padding	0.374s
+ok  	cryptochat/core/protocol	0.478s
+short=0
+
+### core: go test -short -race -tags devcipher ./... (один прогон)
+?   	cryptochat/core/cipher	[no test files]
+ok  	cryptochat/core/algorithms	1.363s
+ok  	cryptochat/core/cryptoctx	2.135s
+ok  	cryptochat/core/dh	7.073s
+ok  	cryptochat/core/internal/stubcipher	1.400s
+ok  	cryptochat/core/kdf	1.385s
+ok  	cryptochat/core/message	14.119s
+ok  	cryptochat/core/modes	1.384s
+ok  	cryptochat/core/padding	1.385s
+ok  	cryptochat/core/protocol	1.621s
+race-devcipher=0
+
+### server: go test -short -race ./... (один прогон)
+?   	cryptochat/server/api/v1	[no test files]
+?   	cryptochat/server/internal/chats/chatstest	[no test files]
+?   	cryptochat/server/internal/contacts/contactstest	[no test files]
+?   	cryptochat/server/internal/delivery/brokertest	[no test files]
+ok  	cryptochat/server/cmd/chatcli	3.168s
+ok  	cryptochat/server/cmd/server	3.170s
+?   	cryptochat/server/internal/store	[no test files]
+ok  	cryptochat/server/internal/accounts	8.178s
+ok  	cryptochat/server/internal/bootstrap	2.856s
+ok  	cryptochat/server/internal/chats	1.559s
+ok  	cryptochat/server/internal/contacts	1.540s
+ok  	cryptochat/server/internal/delivery	3.251s
+ok  	cryptochat/server/internal/delivery/membroker	1.757s
+ok  	cryptochat/server/internal/keyexchange	1.576s
+ok  	cryptochat/server/internal/password	6.164s
+ok  	cryptochat/server/internal/postgres	3.089s
+ok  	cryptochat/server/internal/rabbit	2.116s
+ok  	cryptochat/server/internal/rpc	27.984s
+ok  	cryptochat/server/internal/store/memstore	1.349s
+race=0
+
+### client: go test -short ./... (без тега)
+?   	cryptochat/client/internal/api/v1	[no test files]
+?   	cryptochat/client/internal/apitest	[no test files]
+ok  	cryptochat/client	0.538s
+ok  	cryptochat/client/internal/apperr	0.706s
+ok  	cryptochat/client/internal/ciphers	0.433s
+ok  	cryptochat/client/internal/delivery	0.686s
+ok  	cryptochat/client/internal/keyagree	1.477s
+ok  	cryptochat/client/internal/localdb	1.728s
+ok  	cryptochat/client/internal/profile	0.785s
+ok  	cryptochat/client/internal/rpcclient	5.083s
+ok  	cryptochat/client/internal/service	6.511s
+short=0
+
+### client: go test -short -race -tags devcipher ./... (один прогон)
+?   	cryptochat/client/internal/api/v1	[no test files]
+?   	cryptochat/client/internal/apitest	[no test files]
+ok  	cryptochat/client	2.634s
+ok  	cryptochat/client/internal/apperr	1.647s
+ok  	cryptochat/client/internal/ciphers	1.339s
+ok  	cryptochat/client/internal/delivery	26.717s
+ok  	cryptochat/client/internal/keyagree	5.269s
+ok  	cryptochat/client/internal/localdb	4.702s
+ok  	cryptochat/client/internal/profile	1.808s
+ok  	cryptochat/client/internal/rpcclient	7.628s
+ok  	cryptochat/client/internal/service	13.817s
+race-devcipher=0
+
+### client e2e, теги e2e,devcipher (переписка и регрессия 006)
+--- PASS: TestAccountsRegisterLoginLogout (0.56s)
+--- PASS: TestAccountsTwoUsersOneComputer (1.15s)
+--- PASS: TestAccountsBusyProfile (0.81s)
+--- PASS: TestAccountsCertificates (3.11s)
+    chats_test.go:56: SC-007: MAGENTA — чат виден у собеседника через 1.813s
+    chats_test.go:56: SC-007: RC6 — чат виден у собеседника через 1.915s
+--- PASS: TestChatsCreateByAvailability (4.49s)
+    chats_test.go:97: создано чатов: 84, через сервис клиента: 84
+--- PASS: TestChatsAllParameterCombinations (46.48s)
+    chats_test.go:148: SC-007: закрытие собеседником видно через 605ms
+--- PASS: TestChatsClose (6.79s)
+    contacts_test.go:30: SC-007: входящий запрос виден через 1.763s
+    contacts_test.go:35: SC-007: принятие видно через 1.764s
+--- PASS: TestContactsRequestAcceptReject (6.28s)
+--- PASS: TestContactsMutualAndErrors (0.74s)
+    contacts_test.go:112: SC-007: закрытие чата удалением контакта видно через 1.965s
+--- PASS: TestContactsRemoveClosesChats (4.53s)
+ЗАМЕР: SC-005 готовность сервера → первая новая принятая часть 404ms
+    delivery_faults_test.go:41: ЗАМЕР: SC-005 готовность сервера → первая новая принятая часть 404ms
+--- PASS: TestServerRestartDuringTransfer (13.08s)
+    delivery_faults_test.go:84: SC-004: после перезапусков отправителя и получателя одно целое сообщение
+--- PASS: TestClientRestarts (22.21s)
+    delivery_faults_test.go:101: очереди брокера при заполнении: chat.e8af0e2ae91717c0c1da221cf750a6d9.3cab6dd8-10b8-4d89-8269-364d1ce789eb	0
+    delivery_faults_test.go:105: SC-007: метка и имя файла в очереди (3 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestQueueFullOfflineReceiver (92.16s)
+--- PASS: TestReceiveElsewhere (19.77s)
+ЗАМЕР: SC-008 прирост HeapInuse процесса теста при передаче 256 МиБ (оба сервиса) 20.0 МиБ
+    delivery_faults_test.go:168: ЗАМЕР: SC-008 прирост HeapInuse процесса теста при передаче 256 МиБ (оба сервиса) 20.0 МиБ
+ЗАМЕР: время передачи 256 МиБ SendFile→DONE 4m55s
+    delivery_faults_test.go:169: ЗАМЕР: время передачи 256 МиБ SendFile→DONE 4m55s
+--- PASS: TestMemory256 (301.52s)
+ЗАМЕР: SC-006 отмена передачи отправителем 165ms
+    delivery_faults_test.go:200: ЗАМЕР: SC-006 отмена передачи отправителем 165ms
+ЗАМЕР: SC-006 отмена приёма 5ms
+    delivery_faults_test.go:221: ЗАМЕР: SC-006 отмена приёма 5ms
+ЗАМЕР: SC-006 отмена расшифрования 3ms
+    delivery_faults_test.go:264: ЗАМЕР: SC-006 отмена расшифрования 3ms
+--- PASS: TestCancelOperations (130.82s)
+    keys_test.go:113: SC-002/SC-003: RC6/128, создатель первым: READY у обоих через 1.664s после второй публикации
+    keys_test.go:113: SC-002/SC-003: RC6/128, приглашённый первым: READY у обоих через 1.817s после второй публикации
+    keys_test.go:113: SC-002/SC-003: MAGENTA/192, создатель первым: READY у обоих через 1.764s после второй публикации
+    keys_test.go:113: SC-002/SC-003: MAGENTA/192, приглашённый первым: READY у обоих через 1.815s после второй публикации
+    keys_test.go:113: SC-002/SC-003: RC6/256, создатель первым: READY у обоих через 1.715s после второй публикации
+    keys_test.go:113: SC-002/SC-003: RC6/256, приглашённый первым: READY у обоих через 1.814s после второй публикации
+--- PASS: TestKeysAllLengthsAndOrders (26.64s)
+    --- PASS: TestKeysAllLengthsAndOrders/128_создатель_первым (4.43s)
+    --- PASS: TestKeysAllLengthsAndOrders/128_приглашённый_первым (4.54s)
+    --- PASS: TestKeysAllLengthsAndOrders/192_создатель_первым (4.28s)
+    --- PASS: TestKeysAllLengthsAndOrders/192_приглашённый_первым (4.51s)
+    --- PASS: TestKeysAllLengthsAndOrders/256_создатель_первым (4.36s)
+    --- PASS: TestKeysAllLengthsAndOrders/256_приглашённый_первым (4.52s)
+--- PASS: TestKeysRestartAndReconnect (6.52s)
+--- PASS: TestKeysLostProfile (2.90s)
+    messaging_test.go:53: SC-001: 28 сочетаний режима и набивки, тексты в обе стороны совпали
+ЗАМЕР: SC-002 текст SendText→DONE у подключённого получателя, худший из 5 107ms
+    messaging_test.go:94: ЗАМЕР: SC-002 текст SendText→DONE у подключённого получателя, худший из 5 107ms
+    messaging_test.go:116: SC-007: метки текстов и сеансовые ключи (228 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestTextMessaging (155.14s)
+ЗАМЕР: SC-003 файл 50 МиБ SendFile→DONE у получателя (CTR, ISO 10126) 57s
+    messaging_test.go:164: ЗАМЕР: SC-003 файл 50 МиБ SendFile→DONE у получателя (CTR, ISO 10126) 57s
+    messaging_test.go:175: SC-007: метки содержимого и имена файлов (11 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestFileMessaging (78.94s)
+    messaging_test.go:227: SC-009: история обоих совпала после перезапуска, файл из истории сохранён побайтно равным
+--- PASS: TestHistoryAfterRestart (5.22s)
+    resilience_test.go:44: SC-005: сообщение о недоступном сервере при входе через 1.525s
+    resilience_test.go:51: SC-005: индикатор «нет связи» через 2.281s после остановки
+    resilience_test.go:77: SC-006: сервер готов через 10ms после start; клиент в сети с обновлённым списком через 352ms после готовности
+--- PASS: TestResilienceServerStopStart (9.89s)
+    resilience_test.go:98: SC-005: отзыв сессии замечен через 1.463s
+--- PASS: TestResilienceSessionRevoked (2.51s)
+--- PASS: TestResilienceCorruptedProfile (0.36s)
+    resilience_test.go:175: SC-004: проверено значений: 202 (секреты и ключи всех тестов пакета), журнал 4176909 байт, pg_dump 139027 байт, снимков 14; совпадений: 0
+--- PASS: TestResilienceNoSecretsOnServer (6.77s)
+PASS
+ok  	cryptochat/client/internal/e2e	972.603s
+client-e2e-devcipher=0
+
+### integration e2e, теги e2e,devcipher
+    delivery_test.go:345: SC-003: 2 сообщений в брокере совпали с отправленными байт в байт
+    delivery_test.go:371: SC-002: текст, имя и тип совпали
+    delivery_test.go:397: SC-002: файл 3145728 байт и 64 фрагментов совпал байт в байт
+    delivery_test.go:415: SC-008: наибольший фрагмент 50576 байт, запас до предела сервера 10864 байт
+    delivery_test.go:500: SC-004: повторных выдач 16, повторов при сборке 10
+    delivery_test.go:511: SC-003: метка не найдена на диске брокера, в журналах и базе
+    delivery_test.go:524: SC-005: очереди исчезли за 2.310721s
+--- PASS: TestDeliveryEndToEnd (38.77s)
+--- PASS: TestKeyAgreementThroughServer (23.99s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-128 (0.15s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-128 (0.12s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-192 (0.12s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-192 (0.12s)
+    --- PASS: TestKeyAgreementThroughServer/MAGENTA-256 (0.11s)
+    --- PASS: TestKeyAgreementThroughServer/RC6-256 (0.11s)
+--- PASS: TestClientRejectsBadValues (21.28s)
+PASS
+ok  	cryptochat/integration	84.131s
+integration-e2e-devcipher=0
+
+### server e2e
+    chats_test.go:174: SC-007: CreateChat 15.0115ms
+    chats_test.go:186: SC-007: ListChats 6.285ms
+    chats_test.go:190: SC-007: GetChat 4.4228ms
+    chats_test.go:191: SC-007: ConnectChat 9.6458ms
+    chats_test.go:192: SC-007: PublishPublicValue 7.8777ms
+    chats_test.go:196: SC-007: GetPeerPublicValue 3.9042ms
+    chats_test.go:197: SC-007: DisconnectChat 6.8673ms
+    chats_test.go:198: SC-007: CloseChat 8.6562ms
+    chats_test.go:210: SC-008: ошибка за 2.6049ms
+    chats_test.go:229: SC-008: восстановление за 34.5251ms
+--- PASS: TestChatsEndToEnd (51.63s)
+    delivery_test.go:295: SC-009: отправка не дольше 51.6368ms, доставка не дольше 51.6368ms
+    delivery_test.go:314: после restart rabbitmq: Health SERVING за 10.4506402s
+    delivery_test.go:327: SC-011: ожидающие фрагменты пережили перезапуск брокера, пересоздание контейнера и перезапуск сервера
+    delivery_test.go:335: остановка сервера с открытым потоком 745.87ms
+    delivery_test.go:368: SC-010: ошибка за 9.7676ms
+    delivery_test.go:372: SC-010: брокер остановлен: Health NOT_SERVING за 1.7435ms
+    delivery_test.go:383: SC-010: брокер запущен: Health SERVING за 9.4836152s
+    delivery_test.go:386: SC-010: восстановление за 9.5866552s
+    delivery_test.go:408: запуск без брокера: брокер появился: Health SERVING за 10.2710711s
+    delivery_test.go:415: SC-005: закрытие чата: очереди исчезли за 1.6961103s
+    delivery_test.go:426: SC-005: закрытие при остановленном брокере: очереди исчезли за 11.0530021s
+    delivery_test.go:428: перед удалением контакта: Health SERVING за 2.0229ms
+    delivery_test.go:430: SC-005: удаление контакта: очереди исчезли за 1.7468303s
+--- PASS: TestDeliveryEndToEnd (117.11s)
+    e2e_test.go:130: SC-005: запуск до готовности 15.0434857s
+    e2e_test.go:185: SC-009: вход 109.413ms
+    e2e_test.go:196: SC-009: список контактов 4.5526ms
+    e2e_test.go:251: SC-008: ошибка за 1.9357ms
+    e2e_test.go:259: SC-008: восстановление за 35.1182ms
+--- PASS: TestEndToEnd (66.51s)
+PASS
+ok  	cryptochat/server/test/e2e	235.341s
+server-e2e=0
+
+### интерфейс: npm ci, сборка и тесты в node:22-alpine
+added 173 packages, and audited 174 packages in 9s
+31 packages are looking for funding
+  run `npm fund` for details
+5 vulnerabilities (2 moderate, 1 high, 2 critical)
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> cryptochat-client-frontend@0.0.0 build
+> tsc --noEmit && vite build && touch dist/.gitkeep
+vite v5.4.14 building for production...
+transforming...
+✓ 52 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.29 kB
+dist/assets/index-DFN7vTem.css    4.40 kB │ gzip:  1.44 kB
+dist/assets/index-DSS6UZ4l.js   177.21 kB │ gzip: 56.61 kB
+✓ built in 1.99s
+> cryptochat-client-frontend@0.0.0 test
+> vitest run
+ RUN  v2.1.9 /app
+ ✓ src/backend.test.ts (5 tests) 49ms
+ ✓ src/messages.test.ts (3 tests) 55ms
+ ✓ src/components/ProgressBars.test.tsx (2 tests) 76ms
+ ✓ src/components/StatusBar.test.tsx (2 tests) 108ms
+ ✓ src/useAction.test.tsx (3 tests) 157ms
+ ✓ src/components/Composer.test.tsx (5 tests) 295ms
+ ✓ src/components/MessageItem.test.tsx (7 tests) 420ms
+ ✓ src/views/ClosedChats.test.tsx (2 tests) 308ms
+ ✓ src/views/ConversationView.test.tsx (6 tests) 405ms
+ ✓ src/views/ContactsTab.test.tsx (4 tests) 689ms
+   ✓ три списка и кнопки действий 383ms
+ ✓ src/components/CreateChatDialog.test.tsx (6 tests) 815ms
+   ✓ недоступный алгоритм неактивен с пояснением, по умолчанию — первый доступный 431ms
+ ✓ src/views/ChatsTab.test.tsx (12 tests) 1011ms
+   ✓ закрытие с подтверждением 323ms
+ ✓ src/views/SettingsView.test.tsx (5 tests) 515ms
+ ✓ src/views/LoginView.test.tsx (8 tests) 600ms
+ ✓ src/App.test.tsx (7 tests) 721ms
+ Test Files  15 passed (15)
+      Tests  77 passed (77)
+   Start at  15:34:16
+   Duration  8.53s (transform 16.28s, setup 6.59s, collect 32.76s, tests 6.22s, environment 40.88s, prepare 7.89s)
+frontend=0
+client/frontend/dist/.gitkeep
+client/frontend/dist/index.html
+dist-files=0
+
+### привязки Wails свежие
+wails-generate=0
+diff-wailsjs=0
+
+### сборка окна без тега и пробный запуск
+== привязки: wails generate module
+== интерфейс: scripts/frontend.sh
+== приложение: wails build -s 
+Built 'C:\Users\Вячеслав\Desktop\криптография лабы\project\client\build\bin\cryptochat.exe' in 38.702s.
+build-release=0
+код выхода: 0
+smoke-exit-release=0
+{"frontend":"ready","algorithms":[{"id":"MAGENTA","available":false,"substitute":false,"note":"алгоритм не реализован в этой сборке"},{"id":"RC6","available":false,"substitute":false,"note":"алгоритм не реализован в этой сборке"}],"devcipher":false,"media":"handler"}
+smoke-ready-release=0
+smoke-devcipher-release=0
+smoke-available-release=0
+smoke-media-handler-release=0
+
+### сборка окна с тегом devcipher и пробный запуск
+== привязки: wails generate module
+== интерфейс: scripts/frontend.sh
+== приложение: wails build -s -tags devcipher
+Built 'C:\Users\Вячеслав\Desktop\криптография лабы\project\client\build\bin\cryptochat.exe' in 12.635s.
+build-devcipher=0
+код выхода: 0
+smoke-exit-devcipher=0
+{"frontend":"ready","algorithms":[{"id":"MAGENTA","available":true,"substitute":true,"note":"тестовый шифр вместо MAGENTA, только для разработки"},{"id":"RC6","available":true,"substitute":true,"note":"тестовый шифр вместо RC6, только для разработки"}],"devcipher":true,"media":"handler"}
+smoke-ready-devcipher=0
+smoke-devcipher-devcipher=0
+smoke-available-devcipher=0
+smoke-media-handler-devcipher=0
+
+### проекты Compose, тестовые контейнеры и их тома убраны
+no-containers-left=0
+no-compose-projects-left=0
+no-test-volumes-left=0
+
+### замеры (строки ЗАМЕР: из сквозных тестов клиента)
+ЗАМЕР: SC-002 текст SendText→DONE у подключённого получателя, худший из 5 107ms
+ЗАМЕР: SC-003 файл 50 МиБ SendFile→DONE у получателя (CTR, ISO 10126) 57s
+ЗАМЕР: SC-005 готовность сервера → первая новая принятая часть 404ms
+ЗАМЕР: SC-006 отмена передачи отправителем 165ms
+ЗАМЕР: SC-006 отмена приёма 5ms
+ЗАМЕР: SC-006 отмена расшифрования 3ms
+ЗАМЕР: SC-008 прирост HeapInuse процесса теста при передаче 256 МиБ (оба сервиса) 20.0 МиБ
+ЗАМЕР: время передачи 256 МиБ SendFile→DONE 4m55s
+
+### дополнение после прогона: TestFiles расширен до всех 28 сочетаний режима и набивки (запуск с -run)
+Тест файлов в пакете delivery после полного прогона дополнен: вместо CBC с четырьмя набивками он проверяет все 28 сочетаний (в быстром прогоне — по-прежнему CBC). Перезапущен отдельно:
+go test -count=1 -tags devcipher -run 'TestFiles$' -v ./internal/delivery — подтестов PASS: 28
+ok  	cryptochat/client/internal/delivery	5.228s
+go test -count=1 -race -short -tags devcipher -run 'TestFiles$' ./internal/delivery
+ok  	cryptochat/client/internal/delivery	2.868s
+files-28-combos=0
+
+ИТОГ: failed=0
+Wed Nov 11 18:36:34 RTZ 2026
+
+## повтор после исправлений по проверкам
+Способ проверки: после исправлений по независимым проверкам кода (007-crypto-check.md, 007-design-review.md) повторены go vet и gofmt клиента, быстрые тесты client без тега и с devcipher, новые тесты исправлений с -v, детектор гонок один раз для delivery, localdb, service (devcipher), сборка и тесты интерфейса в node:22-alpine, сквозные тесты клиента только для переписки и доставки, сборка окна обеих сборок (сдаваемая — последней). Остальные шаги полного прогона выше не повторялись.
+Wed Nov 11 19:12:12 RTZ 2026
+
+### client: go vet без тега, с devcipher и e2e,devcipher; gofmt
+go vet ./... && go vet -tags devcipher ./... && go vet -tags e2e,devcipher ./...; gofmt -l .
+vet=0
+vet-devcipher=0
+vet-e2e-devcipher=0
+gofmt: []
+gofmt=0
+
+### client: go test -count=1 -short ./... (без тега)
+?   	cryptochat/client/internal/api/v1	[no test files]
+?   	cryptochat/client/internal/apitest	[no test files]
+ok  	cryptochat/client	0.448s
+ok  	cryptochat/client/internal/apperr	0.505s
+ok  	cryptochat/client/internal/ciphers	0.315s
+ok  	cryptochat/client/internal/delivery	0.906s
+ok  	cryptochat/client/internal/keyagree	1.214s
+ok  	cryptochat/client/internal/localdb	1.684s
+ok  	cryptochat/client/internal/profile	0.627s
+ok  	cryptochat/client/internal/rpcclient	4.900s
+ok  	cryptochat/client/internal/service	6.188s
+short=0
+
+### client: go test -count=1 -short -tags devcipher ./...
+?   	cryptochat/client/internal/api/v1	[no test files]
+?   	cryptochat/client/internal/apitest	[no test files]
+ok  	cryptochat/client	0.787s
+ok  	cryptochat/client/internal/apperr	0.522s
+ok  	cryptochat/client/internal/ciphers	0.318s
+ok  	cryptochat/client/internal/delivery	15.692s
+ok  	cryptochat/client/internal/keyagree	1.260s
+ok  	cryptochat/client/internal/localdb	1.706s
+ok  	cryptochat/client/internal/profile	0.577s
+ok  	cryptochat/client/internal/rpcclient	4.893s
+ok  	cryptochat/client/internal/service	7.457s
+short-devcipher=0
+
+### client: новые тесты исправлений с -v (devcipher)
+--- PASS: TestCancelBeforeParts (0.19s)
+--- PASS: TestAssembleAllFragmentsFail (0.20s)
+--- PASS: TestAssembleCancelled (0.00s)
+--- PASS: TestReceiveHereRightAfterElsewhere (0.07s)
+--- PASS: TestClassify (0.00s)
+--- PASS: TestSafeFileName (0.00s)
+--- PASS: TestCancelMultipartDecryptStops (0.51s)
+--- PASS: TestAssembleCancelledMultipart (0.18s)
+--- PASS: TestRetryRightAfterCancel (0.71s)
+--- PASS: TestCancelAfterUncertainSend (0.32s)
+--- PASS: TestEncryptAheadLimit (1.74s)
+--- PASS: TestEncryptWriteFailureNotice (0.16s)
+--- PASS: TestParamsErrorKeepsParts (0.14s)
+--- PASS: TestTextMagentaSubstitute (0.31s)
+ok  	cryptochat/client/internal/delivery	4.605s
+fixes-delivery=0
+--- PASS: TestFinishAndHistory (0.04s)
+--- PASS: TestPeerCancelAfterPartsVisible (0.02s)
+--- PASS: TestWipedChunksLeaveNoBytes (0.17s)
+ok  	cryptochat/client/internal/localdb	0.621s
+fixes-localdb=0
+--- PASS: TestDialogErrors (0.00s)
+ok  	cryptochat/client	0.091s
+fixes-app=0
+
+### client: детектор гонок, один прогон: go test -short -race -tags devcipher ./internal/delivery ./internal/localdb ./internal/service
+ok  	cryptochat/client/internal/delivery	36.307s
+ok  	cryptochat/client/internal/localdb	3.971s
+ok  	cryptochat/client/internal/service	12.015s
+race-devcipher=0
+
+### интерфейс: sh client/scripts/frontend.sh (npm ci, сборка, тесты в node:22-alpine)
+> tsc --noEmit && vite build && touch dist/.gitkeep
+vite v5.4.14 building for production...
+ ✓ src/backend.test.ts (5 tests) 42ms
+ ✓ src/messages.test.ts (5 tests) 87ms
+ ✓ src/components/StatusBar.test.tsx (2 tests) 64ms
+ ✓ src/components/ProgressBars.test.tsx (2 tests) 79ms
+ ✓ src/useAction.test.tsx (3 tests) 141ms
+ ✓ src/components/Composer.test.tsx (9 tests) 406ms
+ ✓ src/components/MessageItem.test.tsx (10 tests) 492ms
+ ✓ src/views/ClosedChats.test.tsx (2 tests) 264ms
+ ✓ src/components/CreateChatDialog.test.tsx (6 tests) 734ms
+ ✓ src/views/ConversationView.test.tsx (8 tests) 454ms
+ ✓ src/views/ContactsTab.test.tsx (4 tests) 770ms
+ ✓ src/views/ChatsTab.test.tsx (12 tests) 865ms
+ ✓ src/views/SettingsView.test.tsx (5 tests) 515ms
+ ✓ src/views/LoginView.test.tsx (8 tests) 575ms
+ ✓ src/App.test.tsx (7 tests) 701ms
+ Test Files  15 passed (15)
+      Tests  88 passed (88)
+frontend=0
+
+### client e2e, теги e2e,devcipher: переписка и доставка
+go test -tags e2e,devcipher -count=1 -timeout 40m -run 'TestText|TestFile|TestCancel|TestReceiveElsewhere|TestQueueFull|TestHistory|TestClientRestarts|TestServerRestart' ./internal/e2e -v
+ЗАМЕР: SC-005 готовность сервера → первая новая принятая часть 1ms
+    delivery_faults_test.go:41: ЗАМЕР: SC-005 готовность сервера → первая новая принятая часть 1ms
+--- PASS: TestServerRestartDuringTransfer (12.59s)
+    delivery_faults_test.go:84: SC-004: после перезапусков отправителя и получателя одно целое сообщение
+--- PASS: TestClientRestarts (21.41s)
+    delivery_faults_test.go:101: очереди брокера при заполнении: chat.3f2b164733099512820bbf2eb30624a8.0a1c569e-a195-44db-8cf4-04738bdf1a9d	0
+    delivery_faults_test.go:105: SC-007: метка и имя файла в очереди (3 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestQueueFullOfflineReceiver (90.55s)
+--- PASS: TestReceiveElsewhere (19.77s)
+ЗАМЕР: SC-006 отмена передачи отправителем 27ms
+    delivery_faults_test.go:200: ЗАМЕР: SC-006 отмена передачи отправителем 27ms
+ЗАМЕР: SC-006 отмена приёма 3ms
+    delivery_faults_test.go:221: ЗАМЕР: SC-006 отмена приёма 3ms
+ЗАМЕР: SC-006 отмена расшифрования 2ms
+    delivery_faults_test.go:264: ЗАМЕР: SC-006 отмена расшифрования 2ms
+--- PASS: TestCancelOperations (125.53s)
+    messaging_test.go:53: SC-001: 28 сочетаний режима и набивки, тексты в обе стороны совпали
+ЗАМЕР: SC-002 текст SendText→DONE у подключённого получателя, худший из 5 105ms
+    messaging_test.go:94: ЗАМЕР: SC-002 текст SendText→DONE у подключённого получателя, худший из 5 105ms
+    messaging_test.go:116: SC-007: метки текстов и сеансовые ключи (228 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestTextMessaging (131.64s)
+ЗАМЕР: SC-003 файл 50 МиБ SendFile→DONE у получателя (CTR, ISO 10126) 55s
+    messaging_test.go:164: ЗАМЕР: SC-003 файл 50 МиБ SendFile→DONE у получателя (CTR, ISO 10126) 55s
+    messaging_test.go:175: SC-007: метки содержимого и имена файлов (11 строк поиска) не найдены в журналах сервера, pg_dump и файлах брокера
+--- PASS: TestFileMessaging (74.83s)
+    messaging_test.go:227: SC-009: история обоих совпала после перезапуска, файл из истории сохранён побайтно равным
+--- PASS: TestHistoryAfterRestart (5.15s)
+PASS
+ok  	cryptochat/client/internal/e2e	503.192s
+client-e2e-devcipher=0
+
+### сборка окна с тегом devcipher: sh client/scripts/build.sh -tags devcipher
+== привязки: wails generate module
+== интерфейс: scripts/frontend.sh
+== приложение: wails build -s -tags devcipher
+Built 'C:\Users\Вячеслав\Desktop\криптография лабы\project\client\build\bin\cryptochat.exe' in 31.158s.
+build-devcipher=0
+
+### сборка окна без тега (сдаваемая, последней): sh client/scripts/build.sh
+== привязки: wails generate module
+== интерфейс: scripts/frontend.sh
+== приложение: wails build -s 
+Built 'C:\Users\Вячеслав\Desktop\криптография лабы\project\client\build\bin\cryptochat.exe' in 10.968s.
+build-release=0
+
+### проекты Compose и тестовые контейнеры убраны
+no-containers-left=0
+no-compose-projects-left=0
+
+fixes-retest-failed=0
+Wed Nov 11 19:24:37 RTZ 2026

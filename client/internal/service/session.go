@@ -286,9 +286,11 @@ func (s *Service) Login(login, password string) (Snapshot, error) {
 		}
 	}
 	api.SetToken(r.Token)
+	s.startEngine(sess)
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
+		sess.engine.Stop()
 		cancel()
 		_ = db.Close()
 		return Snapshot{}, apperr.New(apperr.Internal)

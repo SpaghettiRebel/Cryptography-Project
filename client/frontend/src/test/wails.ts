@@ -73,11 +73,22 @@ export const CreateChat = vi.fn<GoFn>(async () => ({}));
 export const ConnectChat = vi.fn<GoFn>(async () => ({}));
 export const DisconnectChat = vi.fn<GoFn>(async () => ({}));
 export const CloseChat = vi.fn<GoFn>(async () => undefined);
+export const ListMessages = vi.fn<GoFn>(async () => ({ messages: [], hasMore: false }));
+export const SendText = vi.fn<GoFn>(async () => ({}));
+export const SendFile = vi.fn<GoFn>(async () => null);
+export const CancelMessage = vi.fn<GoFn>(async () => ({}));
+export const RetryDecrypt = vi.fn<GoFn>(async () => ({}));
+export const SaveFile = vi.fn<GoFn>(async () => "");
+export const MarkRead = vi.fn<GoFn>(async () => undefined);
+export const ReceiveHere = vi.fn<GoFn>(async () => ({}));
+export const ListClosedChats = vi.fn<GoFn>(async () => []);
+export const DeleteChatHistory = vi.fn<GoFn>(async () => undefined);
 
 const all = {
   FrontendReady, GetSettings, SaveSettings, ChooseCertificate, CheckServer, Register, Login, Logout, GetSnapshot,
   SendContactRequest, AcceptContact, RejectContact, RemoveContact, ChatOptions, CreateChat, ConnectChat,
-  DisconnectChat, CloseChat,
+  DisconnectChat, CloseChat, ListMessages, SendText, SendFile, CancelMessage, RetryDecrypt, SaveFile, MarkRead,
+  ReceiveHere, ListClosedChats, DeleteChatHistory,
 };
 const defaults = new Map(Object.entries(all).map(([k, f]) => [k, f.getMockImplementation()]));
 

@@ -6,6 +6,10 @@ export function AcceptContact(arg1) {
   return window['go']['main']['App']['AcceptContact'](arg1);
 }
 
+export function CancelMessage(arg1) {
+  return window['go']['main']['App']['CancelMessage'](arg1);
+}
+
 export function ChatOptions() {
   return window['go']['main']['App']['ChatOptions']();
 }
@@ -30,6 +34,10 @@ export function CreateChat(arg1) {
   return window['go']['main']['App']['CreateChat'](arg1);
 }
 
+export function DeleteChatHistory(arg1) {
+  return window['go']['main']['App']['DeleteChatHistory'](arg1);
+}
+
 export function DisconnectChat(arg1) {
   return window['go']['main']['App']['DisconnectChat'](arg1);
 }
@@ -46,12 +54,28 @@ export function GetSnapshot() {
   return window['go']['main']['App']['GetSnapshot']();
 }
 
+export function ListClosedChats() {
+  return window['go']['main']['App']['ListClosedChats']();
+}
+
+export function ListMessages(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListMessages'](arg1, arg2, arg3);
+}
+
 export function Login(arg1, arg2) {
   return window['go']['main']['App']['Login'](arg1, arg2);
 }
 
 export function Logout() {
   return window['go']['main']['App']['Logout']();
+}
+
+export function MarkRead(arg1) {
+  return window['go']['main']['App']['MarkRead'](arg1);
+}
+
+export function ReceiveHere(arg1) {
+  return window['go']['main']['App']['ReceiveHere'](arg1);
 }
 
 export function Register(arg1, arg2) {
@@ -66,10 +90,26 @@ export function RemoveContact(arg1) {
   return window['go']['main']['App']['RemoveContact'](arg1);
 }
 
+export function RetryDecrypt(arg1) {
+  return window['go']['main']['App']['RetryDecrypt'](arg1);
+}
+
+export function SaveFile(arg1) {
+  return window['go']['main']['App']['SaveFile'](arg1);
+}
+
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
 }
 
 export function SendContactRequest(arg1) {
   return window['go']['main']['App']['SendContactRequest'](arg1);
+}
+
+export function SendFile(arg1) {
+  return window['go']['main']['App']['SendFile'](arg1);
+}
+
+export function SendText(arg1, arg2) {
+  return window['go']['main']['App']['SendText'](arg1, arg2);
 }

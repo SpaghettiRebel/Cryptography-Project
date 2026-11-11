@@ -83,6 +83,11 @@ export namespace main {
 	    peerConnected: boolean;
 	    keyState: string;
 	    algorithmNote: string;
+	    unread: number;
+	    receiveState: string;
+	    receiveReason: string;
+	    canSend: boolean;
+	    sendBlock: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ChatView(source);
@@ -102,6 +107,39 @@ export namespace main {
 	        this.peerConnected = source["peerConnected"];
 	        this.keyState = source["keyState"];
 	        this.algorithmNote = source["algorithmNote"];
+	        this.unread = source["unread"];
+	        this.receiveState = source["receiveState"];
+	        this.receiveReason = source["receiveReason"];
+	        this.canSend = source["canSend"];
+	        this.sendBlock = source["sendBlock"];
+	    }
+	}
+	export class ClosedChatView {
+	    id: string;
+	    peer: string;
+	    algorithm: string;
+	    keyBits: number;
+	    cipherMode: string;
+	    padding: string;
+	    createdAt: number;
+	    closedAt: number;
+	    messageCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClosedChatView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.peer = source["peer"];
+	        this.algorithm = source["algorithm"];
+	        this.keyBits = source["keyBits"];
+	        this.cipherMode = source["cipherMode"];
+	        this.padding = source["padding"];
+	        this.createdAt = source["createdAt"];
+	        this.closedAt = source["closedAt"];
+	        this.messageCount = source["messageCount"];
 	    }
 	}
 	export class ContactResult {
@@ -136,6 +174,130 @@ export namespace main {
 	        this.padding = source["padding"];
 	    }
 	}
+	export class MessageError {
+	    code: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MessageError(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.code = source["code"];
+	        this.message = source["message"];
+	    }
+	}
+	export class Progress {
+	    done: number;
+	    total: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Progress(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.done = source["done"];
+	        this.total = source["total"];
+	    }
+	}
+	export class MessageView {
+	    seq: number;
+	    chatId: string;
+	    direction: string;
+	    kind: string;
+	    createdAt: number;
+	    state: string;
+	    text: string;
+	    fileName: string;
+	    size: number;
+	    mediaUrl: string;
+	    error?: MessageError;
+	    encrypt?: Progress;
+	    send?: Progress;
+	    receive?: Progress;
+	    decrypt?: Progress;
+	    cancellable: boolean;
+	    retryable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new MessageView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.seq = source["seq"];
+	        this.chatId = source["chatId"];
+	        this.direction = source["direction"];
+	        this.kind = source["kind"];
+	        this.createdAt = source["createdAt"];
+	        this.state = source["state"];
+	        this.text = source["text"];
+	        this.fileName = source["fileName"];
+	        this.size = source["size"];
+	        this.mediaUrl = source["mediaUrl"];
+	        this.error = this.convertValues(source["error"], MessageError);
+	        this.encrypt = this.convertValues(source["encrypt"], Progress);
+	        this.send = this.convertValues(source["send"], Progress);
+	        this.receive = this.convertValues(source["receive"], Progress);
+	        this.decrypt = this.convertValues(source["decrypt"], Progress);
+	        this.cancellable = source["cancellable"];
+	        this.retryable = source["retryable"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MessagePage {
+	    messages: MessageView[];
+	    hasMore: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new MessagePage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.messages = this.convertValues(source["messages"], MessageView);
+	        this.hasMore = source["hasMore"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
 	
 	export class SessionView {
 	    login: string;

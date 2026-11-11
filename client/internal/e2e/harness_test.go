@@ -220,6 +220,7 @@ type tokenSpy struct {
 	token   string
 	publish int
 	peer    int
+	opens   int // открытия потока приёма
 }
 
 // Секретные значения и ключи всех участников за прогон: SC-004 ищет их на сервере и в интерфейсе.
@@ -268,6 +269,21 @@ func (s *tokenSpy) GetPeerPublicValue(ctx context.Context, id [16]byte) ([]byte,
 	s.peer++
 	s.mu.Unlock()
 	return s.API.GetPeerPublicValue(ctx, id)
+}
+
+// OpenReceive считает открытия потока приёма.
+func (s *tokenSpy) OpenReceive(ctx context.Context, id [16]byte) (rpcclient.ReceiveStream, error) {
+	s.mu.Lock()
+	s.opens++
+	s.mu.Unlock()
+	return s.API.OpenReceive(ctx, id)
+}
+
+// openCalls — число открытий потока приёма с момента запуска сервиса.
+func (s *tokenSpy) openCalls() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.opens
 }
 
 // publishCalls — число публикаций открытого значения с момента запуска сервиса.

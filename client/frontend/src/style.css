@@ -304,3 +304,100 @@ button.link {
 .notice-error {
   background: var(--err-bg);
 }
+
+/* Переписка */
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.message {
+  max-width: 75%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-out {
+  align-self: flex-end;
+  background: #e8efff;
+}
+
+.message-in {
+  align-self: flex-start;
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-image img {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 4px;
+}
+
+.progress-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progress-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.progress-row progress {
+  flex: 1;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer textarea {
+  width: 100%;
+  font: inherit;
+  padding: 6px;
+  resize: vertical;
+}
+
+.closed-chats {
+  margin-top: 16px;
+}

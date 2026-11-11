@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { api, subscribe } from "./backend";
 import Notices from "./components/Notices";
+import { onMessages, onProgress, resetFeeds } from "./messages";
 import { applySnapshot, emptySnapshot, getState, pushNotice, setState, useStore } from "./store";
 import LoginView from "./views/LoginView";
 import MainView from "./views/MainView";
@@ -18,7 +19,10 @@ export default function App() {
       notice: (n) => {
         pushNotice(n);
       },
+      messages: onMessages,
+      progress: onProgress,
       sessionEnded: (e) => {
+        resetFeeds();
         setState({
           screen: "login",
           snapshot: { ...emptySnapshot, connection: getState().snapshot.connection },
